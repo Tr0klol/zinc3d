@@ -1,2 +1,2 @@
 # zinc3d
-a 3d zelda remake! 
+# a 3d zelda fangame! 
