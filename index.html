@@ -685,6 +685,8 @@ function init3D() {
     
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    // CRITICAL PERF FIX: Cap resolution on high-DPI (Retina) laptops to prevent freezing
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); 
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.getElementById('game-container').appendChild(renderer.domElement);
@@ -1042,16 +1044,36 @@ function sync3D() {
     dirLight.target.updateMatrixWorld();
 }
 
-function gameLoop() {
+let lastTime = 0;
+let accumulator = 0;
+const timeStep = 1000 / 60; // 60 updates per second
+
+function gameLoop(currentTime) {
     requestAnimationFrame(gameLoop);
-    updateLogic();
+    
+    if (!lastTime) lastTime = currentTime;
+    let deltaTime = currentTime - lastTime;
+    
+    // Prevent the "spiral of death" (freezing) if the tab lags or is minimized
+    if (deltaTime > 250) deltaTime = 250; 
+    
+    lastTime = currentTime;
+    accumulator += deltaTime;
+    
+    // FIXED TIMESTEP: Always update logic exactly 60 times a second!
+    // This makes game speed identical on 30Hz laptops and 240Hz PC monitors.
+    while (accumulator >= timeStep) {
+        updateLogic();
+        accumulator -= timeStep;
+    }
+    
     sync3D();
     renderer.render(scene, camera);
 }
 
 window.onload = function() {
     init3D();
-    gameLoop();
+    requestAnimationFrame(gameLoop);
 };
 </script>
 </body>
