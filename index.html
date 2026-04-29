@@ -218,7 +218,7 @@ document.getElementById('start-btn').addEventListener('click', () => {
 
 document.addEventListener('mousemove', e => {
     if (document.pointerLockElement) {
-        camYaw -= e.movementX * 0.0025;
+        camYaw += e.movementX * 0.0025;
         camPitch += e.movementY * 0.0025;
         camPitch = Math.max(-0.1, Math.min(Math.PI/2.2, camPitch));
         lastMouseTime = Date.now();
@@ -291,7 +291,8 @@ document.getElementById('touch-look-zone').addEventListener('touchmove', e => {
         if(e.changedTouches[i].identifier === lookTouchId) {
             let dx = e.changedTouches[i].clientX - lastLookX;
             let dy = e.changedTouches[i].clientY - lastLookY;
-            camYaw -= dx * 0.005; camPitch += dy * 0.005;
+            camYaw += dx * 0.005; 
+            camPitch += dy * 0.005;
             camPitch = Math.max(-0.1, Math.min(Math.PI/2.2, camPitch));
             lastLookX = e.changedTouches[i].clientX; lastLookY = e.changedTouches[i].clientY;
             lastMouseTime = Date.now();
