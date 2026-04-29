@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Legend of Zelda 3D — Complete Edition</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { margin: 0; padding: 0; border: 0; box-sizing: border-box; }
+body { background: #000; color: #fff; font-family: 'Courier New', monospace; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none; overscroll-behavior: none; }
+#game-container { position: absolute; inset: 0; z-index: 1; }
+
+#ui-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding-top: 10px; }
+#hud { width: 90%; max-width: 500px; padding: 8px 10px; background: rgba(16, 16, 16, 0.85); border: 2px solid #333; border-radius: 6px; display: flex; justify-content: space-around; gap: 12px; align-items: center; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); backdrop-filter: blur(4px); pointer-events: auto; }
+#hud b { color: #fff; font-size: 18px; }
+
+#msg-container { margin-bottom: 80px; width: 90%; max-width: 600px; text-align: center; pointer-events: none; }
+#msg { padding: 12px 24px; background: rgba(5, 5, 5, 0.9); border: 1px solid #444; border-radius: 6px; font-size: 16px; color: #fff; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.5); font-weight: bold; transition: opacity 0.3s; }
+
+#ov { position: absolute; inset: 0; background: rgba(0,0,0,.92); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; pointer-events: auto; }
+#ov h1 { color: #ffcc00; font-size: 42px; letter-spacing: 5px; text-shadow: 0 0 20px #ffa500; margin-bottom: 10px; text-align: center; }
+#ov p { color: #aaa; font-size: 14px; margin: 6px 0; text-align: center; max-width: 80%; }
+#ov .go { color: #4ef; letter-spacing: 2px; margin-top: 24px; font-size: 18px; font-weight: bold; animation: blink 1.1s infinite; cursor: pointer; padding: 10px 20px; border: 1px solid #4ef; border-radius: 4px; background: rgba(0,0,0,0.5); }
+#ov .go:hover { background: rgba(68, 238, 255, 0.2); }
+
+#interaction-hint { position: absolute; bottom: 30%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 8px 16px; border-radius: 4px; border: 1px solid #fff; font-size: 14px; color: #fff; display: none; pointer-events: none; z-index: 4; }
+
+#crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.5); border-radius: 50%; transform: translate(-50%, -50%); z-index: 10; pointer-events: none; display: none; }
+
+/* Mobile Touch Controls Overlay */
+#mobile-ui { position: absolute; inset: 0; z-index: 5; display: none; pointer-events: none; }
+#touch-move-zone { position: absolute; left: 0; top: 0; bottom: 0; width: 50%; pointer-events: auto; }
+#touch-look-zone { position: absolute; right: 0; top: 0; bottom: 0; width: 50%; pointer-events: auto; }
+
+#joystick-base { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: none; pointer-events: none; }
+#joystick-stick { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+
+.action-btn { position: absolute; background: rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; color: rgba(255,255,255,0.9); pointer-events: auto; user-select: none; backdrop-filter: blur(4px); }
+.action-btn:active { background: rgba(255,255,255,0.4); }
+#btn-sword { bottom: 40px; right: 120px; width: 80px; height: 80px; font-size: 24px;}
+#btn-sprint { bottom: 40px; right: 20px; width: 70px; height: 70px; }
+#btn-interact { bottom: 130px; right: 70px; width: 70px; height: 70px; font-size: 12px; }
+
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@media (max-width: 768px) { 
+    #hud { font-size: 12px; width: 95%; } #hud b { font-size: 14px; }
+    #crosshair { display: none !important; } 
+    #mobile-ui { display: block; }
+    #ov p.pc-only { display: none; }
+}
+@media (min-width: 769px) { #ov p.mobile-only { display: none; } }
+</style>
+</head>
+<body>
+
+<div id="game-container"></div>
+<div id="crosshair"></div>
+
+<div id="ui-layer">
+    <div id="hud">
+        <div><span style="color:#ffb3b3">HEARTS</span> <b id="hh">♥♥♥</b></div>
+        <div><span style="color:#ffd966">TRIFORCE</span> <b id="htf">0/1</b></div>
+    </div>
+    <div id="msg-container"><div id="msg" style="opacity:0;"></div></div>
+</div>
+
+<div id="interaction-hint"></div>
+
+<div id="mobile-ui">
+    <div id="touch-move-zone"></div>
+    <div id="touch-look-zone"></div>
+    <div id="joystick-base"><div id="joystick-stick"></div></div>
+    
+    <div class="action-btn" id="btn-sword">⚔️</div>
+    <div class="action-btn" id="btn-sprint">Sprint</div>
+    <div class="action-btn" id="btn-interact">Action</div>
+</div>
+
+<div id="ov">
+    <h1>⚔ THE LEGEND OF ZELDA 3D ⚔</h1>
+    <p class="pc-only"><b>Mouse</b> - Look Around (Pointer Lock) · <b>WASD</b> - Move</p>
+    <p class="pc-only"><b>Shift</b> - Sprint · <b>Left Click</b> - Sword · <b>Key E</b> - Interact</p>
+    <p class="mobile-only"><b>Left Side</b> - Move · <b>Right Side</b> - Look</p>
+    <p class="mobile-only">Use on-screen buttons to Attack, Sprint, and Interact.</p>
+    <br>
+    <p>Find the Dungeon, clear the guards, and defeat Ganon!</p>
+    <div class="go" id="start-btn">START GAME</div>
+</div>
+
+<script>
+// --- CORE GAME STATE & CONSTANTS ---
+const msgText = document.getElementById('msg');
+const heartEl = document.getElementById('hh');
+const triEl = document.getElementById('htf');
+const hintEl = document.getElementById('interaction-hint');
+const crosshairEl = document.getElementById('crosshair');
+
+// Compact 24x16 map size for dense, focused gameplay
+const TILE = 32, COLS = 24, ROWS = 16, WIDTH = COLS*TILE, HEIGHT = ROWS*TILE;
+let gameState = 'title';
+let frame = 0;
+let keys = {};
+let lastMouseTime = 0;
+
+// Camera State
+let camYaw = Math.PI; 
+let camPitch = Math.PI / 8;
+let currentCamPos = new THREE.Vector3(WIDTH/2, 300, HEIGHT/2 + 240);
+let currentLookTarget = new THREE.Vector3(WIDTH/2, 0, HEIGHT/2);
+
+// --- MAP BUILDER ---
+function makeBorderedMap() {
+    let map = [];
+    for(let y=0; y<ROWS; y++) {
+        let row = [];
+        for(let x=0; x<COLS; x++) {
+            if(y===0 || y===ROWS-1 || x===0 || x===COLS-1) row.push(1);
+            else row.push(0);
+        }
+        map.push(row);
+    }
+    return map;
+}
+
+// Map 1: Overworld Clearing
+const overworldMap = makeBorderedMap();
+overworldMap[0][11] = 5; overworldMap[0][12] = 5; // Dungeon Entrance North
+// Add procedural trees (4) to overworld
+for(let i=0; i<45; i++) {
+    let tx = 1 + Math.floor(Math.random()*(COLS-2));
+    let ty = 1 + Math.floor(Math.random()*(ROWS-2));
+    // Keep a path from spawn to the entrance clear
+    if(tx > 9 && tx < 14) continue;
+    if(overworldMap[ty][tx] === 0) overworldMap[ty][tx] = 4;
+}
+
+// Map 2: Dungeon Room 1 (Enemies)
+const dungeonRoom1 = makeBorderedMap();
+dungeonRoom1[ROWS-1][11] = 3; dungeonRoom1[ROWS-1][12] = 3; // Entrance door bottom
+dungeonRoom1[ROWS-2][11] = 8; dungeonRoom1[ROWS-2][12] = 8; // Exit to overworld pad
+dungeonRoom1[0][11] = 2; dungeonRoom1[0][12] = 2; // Locked door to Boss (opens when cleared)
+// Pillars
+dungeonRoom1[4][4] = 1; dungeonRoom1[4][19] = 1;
+dungeonRoom1[11][4] = 1; dungeonRoom1[11][19] = 1;
+
+// Map 3: Dungeon Room 2 (Boss)
+const dungeonBossRoom = makeBorderedMap();
+dungeonBossRoom[ROWS-1][11] = 3; dungeonBossRoom[ROWS-1][12] = 3; // Door bottom
+dungeonBossRoom[ROWS-2][11] = 9; dungeonBossRoom[ROWS-2][12] = 9; // Exit pad back to room 1
+
+const maps = {
+    'overworld': overworldMap,
+    'room1': dungeonRoom1,
+    'room2': dungeonBossRoom
+};
+
+let currentMapId = 'overworld';
+let room1Cleared = false;
+let bossDefeated = false;
+
+let player = {
+    x: (COLS/2)*TILE, y: (ROWS-4)*TILE, w: 14, h: 14, 
+    visualAngle: Math.PI, hp: 6, maxHp: 6, triforce: 0, 
+    speed: 1.4, sprintSpeed: 2.8, 
+    inv: 0, moving: false, sprinting: false
+};
+
+let enemies=[], projectiles=[], drops=[], particles=[];
+let sword=null;
+let messageTimer=0;
+
+// --- SOUND SYSTEM ---
+function beep(freq,type='square',duration=.08,vol=.08,finalFreq){
+  try{
+    const o=new (window.AudioContext||window.webkitAudioContext)().createOscillator();
+    const g=o.context.createGain();
+    o.connect(g);g.connect(o.context.destination);
+    o.type=type; o.frequency.setValueAtTime(freq,o.context.currentTime);
+    if(finalFreq) o.frequency.linearRampToValueAtTime(finalFreq,o.context.currentTime+duration);
+    g.gain.setValueAtTime(vol,o.context.currentTime);g.gain.exponentialRampToValueAtTime(.001,o.context.currentTime+duration);
+    o.start();o.stop(o.context.currentTime+duration+.02);
+  }catch(e){}
+}
+function sound(type){
+  if(type==='sword')beep(420,'square',.06,.12,220);
+  if(type==='hit')beep(220,'triangle',.08,.14,120);
+  if(type==='die')beep(160,'sawtooth',.18,.2,80);
+  if(type==='pick')beep(520,'sine',.05,.08);
+  if(type==='unlock'){beep(330,'sine',.09,.12);setTimeout(()=>beep(440,'sine',.09,.12),80);}
+  if(type==='win'){beep(520,'square',.18,.18,760);setTimeout(()=>beep(660,'square',.14,.16),180);setTimeout(()=>beep(880,'square',.14,.16),360);}
+}
+
+// --- INPUT HANDLING ---
+document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true; if(e.key==='Shift') keys.shift=true;});
+document.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false; if(e.key==='Shift') keys.shift=false;});
+
+// Mouse Look (Pointer Lock)
+document.getElementById('start-btn').addEventListener('click', () => {
+    startGame();
+    if(window.innerWidth > 768) document.body.requestPointerLock();
+});
+
+document.addEventListener('mousemove', e => {
+    if (document.pointerLockElement) {
+        camYaw -= e.movementX * 0.0025;
+        camPitch += e.movementY * 0.0025;
+        camPitch = Math.max(-0.1, Math.min(Math.PI/2.2, camPitch));
+        lastMouseTime = Date.now();
+    }
+});
+
+// PC Actions
+document.body.addEventListener('mousedown', e => {
+    if (document.pointerLockElement && gameState === 'play') {
+        if (e.button === 0 && !keys._sword) { swingSword(); keys._sword = true; }
+    }
+});
+document.body.addEventListener('mouseup', e => { if (e.button === 0) keys._sword = false; });
+
+// Mobile Touch Controls
+let joyActive = false, joyTouchId = null;
+let joyBaseX = 0, joyBaseY = 0;
+let joyDX = 0, joyDY = 0;
+let lookTouchId = null;
+let lastLookX = 0, lastLookY = 0;
+
+const joyBaseEl = document.getElementById('joystick-base');
+const joyStickEl = document.getElementById('joystick-stick');
+
+document.getElementById('touch-move-zone').addEventListener('touchstart', e => {
+    e.preventDefault();
+    const touch = e.changedTouches[0];
+    joyActive = true; joyTouchId = touch.identifier;
+    joyBaseX = touch.clientX; joyBaseY = touch.clientY;
+    joyDX = 0; joyDY = 0;
+    joyBaseEl.style.display = 'block';
+    joyBaseEl.style.left = (joyBaseX - 60) + 'px';
+    joyBaseEl.style.top = (joyBaseY - 60) + 'px';
+    joyStickEl.style.transform = `translate(-50%, -50%)`;
+});
+
+document.getElementById('touch-move-zone').addEventListener('touchmove', e => {
+    e.preventDefault();
+    for(let i=0; i<e.changedTouches.length; i++) {
+        if(e.changedTouches[i].identifier === joyTouchId) {
+            let dx = e.changedTouches[i].clientX - joyBaseX;
+            let dy = e.changedTouches[i].clientY - joyBaseY;
+            let dist = Math.hypot(dx, dy);
+            let maxDist = 40;
+            if (dist > maxDist) { dx = (dx/dist)*maxDist; dy = (dy/dist)*maxDist; }
+            joyDX = dx / maxDist; joyDY = dy / maxDist; // Normalized -1 to 1
+            joyStickEl.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        }
+    }
+});
+
+function endJoy(e) {
+    for(let i=0; i<e.changedTouches.length; i++) {
+        if(e.changedTouches[i].identifier === joyTouchId) {
+            joyActive = false; joyTouchId = null; joyDX = 0; joyDY = 0;
+            joyBaseEl.style.display = 'none';
+        }
+    }
+}
+document.getElementById('touch-move-zone').addEventListener('touchend', endJoy);
+document.getElementById('touch-move-zone').addEventListener('touchcancel', endJoy);
+
+document.getElementById('touch-look-zone').addEventListener('touchstart', e => {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    lookTouchId = t.identifier; lastLookX = t.clientX; lastLookY = t.clientY;
+});
+document.getElementById('touch-look-zone').addEventListener('touchmove', e => {
+    e.preventDefault();
+    for(let i=0; i<e.changedTouches.length; i++) {
+        if(e.changedTouches[i].identifier === lookTouchId) {
+            let dx = e.changedTouches[i].clientX - lastLookX;
+            let dy = e.changedTouches[i].clientY - lastLookY;
+            camYaw -= dx * 0.005; camPitch += dy * 0.005;
+            camPitch = Math.max(-0.1, Math.min(Math.PI/2.2, camPitch));
+            lastLookX = e.changedTouches[i].clientX; lastLookY = e.changedTouches[i].clientY;
+            lastMouseTime = Date.now();
+        }
+    }
+});
+function endLook(e) {
+    for(let i=0; i<e.changedTouches.length; i++) { if(e.changedTouches[i].identifier === lookTouchId) lookTouchId = null; }
+}
+document.getElementById('touch-look-zone').addEventListener('touchend', endLook);
+document.getElementById('touch-look-zone').addEventListener('touchcancel', endLook);
+
+// Mobile Action Buttons
+const bindBtn = (id, actionDown, actionUp) => {
+    const el = document.getElementById(id);
+    el.addEventListener('touchstart', e => { e.preventDefault(); actionDown(); });
+    el.addEventListener('touchend', e => { e.preventDefault(); actionUp(); });
+};
+bindBtn('btn-sword', () => { if(!keys._sword){ swingSword(); keys._sword=true; } }, () => { keys._sword=false; });
+bindBtn('btn-sprint', () => keys.shift=true, () => keys.shift=false);
+bindBtn('btn-interact', () => { keys.e=true; setTimeout(()=>keys.e=false, 100); }, () => {});
+
+
+// --- GAME LOGIC ---
+function showMessage(text,ttl=180){ 
+    msgText.innerText=text; 
+    msgText.style.opacity='1'; 
+    messageTimer=ttl; 
+}
+
+function updateHUD(){
+  const hearts=[]; for(let i=0;i<player.maxHp;i+=2){ hearts.push(player.hp>=i+2 ? '♥' : player.hp===i+1 ? '♡' : '♡'); }
+  heartEl.innerText=hearts.join(''); 
+  triEl.innerText=`${player.triforce}/1`;
+  if(gameState === 'play' && window.innerWidth > 768) crosshairEl.style.display = 'block';
+  else crosshairEl.style.display = 'none';
+}
+
+function isSolid(tile, mapId){
+    if(mapId==='overworld') return tile===1 || tile===4; // wall, tree
+    return tile===1 || tile===2; // wall, closed door
+}
+function collides(x,y,w,h,mapId){
+  const map = maps[mapId];
+  const x1=Math.floor(x/TILE),x2=Math.floor((x+w-1)/TILE),y1=Math.floor(y/TILE),y2=Math.floor((y+h-1)/TILE);
+  for(let ty=y1;ty<=y2;ty++) for(let tx=x1;tx<=x2;tx++){ const t=(map[ty]||[])[tx]; if(t!==undefined && isSolid(t, mapId)) return true; }
+  return false;
+}
+
+function spawnEnemies(mapId){
+  enemies=[];
+  if(mapId === 'room1' && !room1Cleared){
+      enemies.push({type:'moblin', x: 6*TILE, y: 6*TILE, hp:3, mhp:3, spd:0.8, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
+      enemies.push({type:'moblin', x: 18*TILE, y: 6*TILE, hp:3, mhp:3, spd:0.8, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
+      enemies.push({type:'moblin', x: 12*TILE, y: 10*TILE, hp:3, mhp:3, spd:0.8, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
+  }
+  if(mapId === 'room2' && !bossDefeated){
+      enemies.push({type:'boss', x: 12*TILE-16, y: 6*TILE, hp:12, mhp:12, spd:0, w:32, h:32, dx:0, dy:0, tm:0, inv:0});
+  }
+}
+
+function resetGame(){
+  currentMapId='overworld'; room1Cleared=false; bossDefeated=false;
+  dungeonRoom1[0][11] = 2; dungeonRoom1[0][12] = 2; // Relock door
+  player.x=(COLS/2)*TILE; player.y=(ROWS-4)*TILE; player.hp=6; player.triforce=0;
+  player.inv=0; player.moving = false; player.sprinting = false;
+  camYaw = Math.PI; camPitch = Math.PI / 8; 
+  
+  spawnEnemies('overworld');
+  projectiles=[]; drops=[]; particles=[]; sword=null;
+  document.getElementById('ov').style.display='none';
+  gameState='play';
+  showMessage('Explore Hyrule to find the Dungeon entrance.');
+  updateHUD(); refresh3DMap();
+}
+
+function startGame(){ if(gameState==='title'||gameState==='gameover'||gameState==='win'){ resetGame(); } }
+
+function loadMap(newMapId, spawnX, spawnY, spawnYaw, msg){
+    currentMapId = newMapId;
+    player.x = spawnX; player.y = spawnY;
+    camYaw = spawnYaw;
+    player.visualAngle = spawnYaw;
+    spawnEnemies(newMapId);
+    projectiles=[]; drops=[]; particles=[]; sword=null;
+    refresh3DMap();
+    if(msg) showMessage(msg);
+    // Hard snap camera
+    currentCamPos.set(player.x, 300, player.y + 240);
+    currentLookTarget.set(player.x, 0, player.y);
+}
+
+function hitEnemy(idx,dmg,knockX,knockY){
+  const e=enemies[idx]; if(e.inv>0) return;
+  e.hp-=dmg; e.inv=20; e.dx=knockX; e.dy=knockY; sound('hit');
+  for(let i=0;i<5;i++) particles.push({x:e.x+e.w/2,y:e.y+e.h/2,dx:(Math.random()-.5)*4,dy:(Math.random()-.5)*4,life:18,color:0xffdd55});
+  if(e.hp<=0){
+    sound('die'); 
+    if(e.type==='boss'){ 
+        bossDefeated=true; 
+        drops.push({x:e.x+8,y:e.y+8,type:'triforce',val:0,life:9999}); 
+        showMessage('Ganon Defeated! Claim the Triforce!'); 
+    } else {
+        if(Math.random()<0.4) drops.push({x:e.x,y:e.y,type:'heart',life:480});
+    }
+    enemies.splice(idx,1); 
+    
+    // Room 1 clear check
+    if(currentMapId === 'room1' && enemies.length === 0 && !room1Cleared) {
+        room1Cleared = true;
+        dungeonRoom1[0][11] = 3; dungeonRoom1[0][12] = 3; // Open Door
+        sound('unlock');
+        showMessage('The north door unlocked!');
+        refresh3DMap();
+    }
+  }
+}
+function hurtPlayer(amount){
+  if(player.inv>0 || gameState!=='play') return;
+  player.hp=Math.max(0,player.hp-amount); player.inv=60; sound('hit');
+  for(let i=0;i<8;i++) particles.push({x:player.x+player.w/2,y:player.y+player.h/2,dx:(Math.random()-.5)*5,dy:(Math.random()-.5)*5,life:24,color:0xff2222});
+  updateHUD(); 
+  if(player.hp<=0){ 
+      gameState='gameover'; document.exitPointerLock(); 
+      document.getElementById('ov').style.display='flex'; 
+      document.querySelector('#ov h1').innerText='GAME OVER'; 
+      document.querySelector('#ov p').innerText='You have fallen.';
+  }
+}
+
+function swingSword(){
+  if(gameState!=='play') return; if(sword) return; sound('sword');
+  const len=24; 
+  let sx = player.x + player.w/2 - len/2 + Math.sin(player.visualAngle) * 16;
+  let sy = player.y + player.h/2 - len/2 - Math.cos(player.visualAngle) * 16; // -cos for Forward
+  sword={x:sx,y:sy,w:len,h:len,life:12, angle: player.visualAngle};
+}
+function overlap(a,b){return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
+
+function interact(){
+  if(gameState!=='play') return;
+  const cx=Math.floor((player.x+player.w/2)/TILE), cy=Math.floor((player.y+player.h/2)/TILE);
+  const tile=(maps[currentMapId][cy]||[])[cx];
+  
+  if(currentMapId==='overworld' && tile===5) {
+      loadMap('room1', (COLS/2)*TILE, (ROWS-3)*TILE, 0, 'Dungeon Floor 1. Defeat the guards.');
+  }
+  else if(currentMapId==='room1') {
+      if(tile===8) loadMap('overworld', 11.5*TILE, 2*TILE, Math.PI, 'Returned to Hyrule.'); // Exit
+  }
+  else if(currentMapId==='room2') {
+      if(tile===9) loadMap('room1', 11.5*TILE, 2*TILE, Math.PI, 'Returned to Room 1.'); // Exit
+  }
+}
+
+function movePlayer(){
+  if(gameState!=='play') return;
+  
+  let ix = 0, iy = 0;
+  if(keys.a) ix -= 1; if(keys.d) ix += 1;
+  if(keys.w) iy -= 1; if(keys.s) iy += 1;
+  
+  if(joyActive) { ix = joyDX; iy = joyDY; }
+
+  let mag = Math.hypot(ix, iy);
+  if(mag > 1) { ix /= mag; iy /= mag; mag = 1; }
+
+  let dx = 0, dy = 0;
+  if(mag > 0.1) {
+      player.moving = true;
+      // Sprint when moving forward and shift is held
+      player.sprinting = keys.shift && iy < -0.2; 
+      let currentSpeed = player.sprinting ? player.sprintSpeed : player.speed;
+
+      let forwardX = Math.sin(camYaw);
+      let forwardY = -Math.cos(camYaw); // -Cos is North/Forward in 2D
+      let rightX = Math.cos(camYaw);
+      let rightY = Math.sin(camYaw);
+
+      // Map raw inputs to camera relative vectors
+      dx = (forwardX * -iy) + (rightX * ix);
+      dy = (forwardY * -iy) + (rightY * ix);
+
+      let moveMag = Math.hypot(dx, dy);
+      dx = (dx / moveMag) * currentSpeed * mag;
+      dy = (dy / moveMag) * currentSpeed * mag;
+
+      let targetVisualAngle = Math.atan2(dx, -dy);
+      
+      let diff = targetVisualAngle - player.visualAngle;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      player.visualAngle += diff * 0.2; 
+
+  } else {
+      player.moving = false;
+      player.sprinting = false;
+  }
+
+  if(player.inv>0) player.inv--;
+  const nxp = player.x+dx, nyp = player.y+dy;
+  if(!collides(nxp+2,player.y+2,player.w-4,player.h-4,currentMapId)) player.x=nxp;
+  if(!collides(player.x+2,nyp+2,player.w-4,player.h-4,currentMapId)) player.y=nyp;
+  
+  // Auto-transitions without interacting when walking through doors
+  if(currentMapId==='room1' && player.y < 1.5*TILE && room1Cleared) {
+      loadMap('room2', (COLS/2)*TILE, (ROWS-3)*TILE, 0, "Ganon's Lair!");
+  }
+}
+
+function updateEnemies(){
+  const mapId = currentMapId;
+  for(const e of enemies){
+    if(e.inv>0) e.inv--; e.tm++;
+    const dx=player.x-e.x, dy=player.y-e.y, dist=Math.hypot(dx,dy);
+    
+    if(e.type==='moblin'){
+      if(dist<150 && e.tm%30===0){ e.dx=Math.sign(dx); e.dy=Math.sign(dy); }
+      if(e.tm%90===0 && dist>160){ const dir=[[-1,0],[1,0],[0,-1],[0,1]][Math.floor(Math.random()*4)]; e.dx=dir[0]; e.dy=dir[1]; }
+      const nx=e.x+e.dx*e.spd, ny=e.y+e.dy*e.spd; 
+      if(!collides(nx,ny,e.w,e.h,mapId)){ e.x=nx; e.y=ny; } else { e.dx=-e.dx; e.dy=-e.dy; }
+    }
+    
+    if(e.type==='boss'){
+      if(e.tm%120===0){ e.x = 4*TILE + Math.random()*16*TILE; e.y = 2*TILE + Math.random()*8*TILE; } 
+      if(e.tm%80===0) {
+          let count = e.hp <= 6 ? 7 : 5;
+          for(let k=0;k<count;k++){ 
+              const ang=(Math.PI*2/count)*k; 
+              projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:10,h:10,dx:Math.cos(ang)*2.5,dy:Math.sin(ang)*2.5,life:150}); 
+          }
+      }
+    }
+    if(overlap(e,player) && player.inv===0) hurtPlayer(e.type==='boss'?2:1);
+  }
+}
+
+function updateProjectiles(){
+  for(let i=projectiles.length-1;i>=0;i--){
+    const p=projectiles[i]; p.life--; if(p.life<=0){ projectiles.splice(i,1); continue; }
+    let nx=p.x+p.dx, ny=p.y+p.dy;
+    if(collides(nx,ny,p.w,p.h,currentMapId)){ projectiles.splice(i,1); continue; } else { p.x=nx; p.y=ny; }
+    if(overlap(p,player) && player.inv===0){ hurtPlayer(1); projectiles.splice(i,1); }
+  }
+}
+
+function updateDrops(){
+  for(let i=drops.length-1;i>=0;i--){
+    const d=drops[i]; d.life--; if(d.life<=0){ drops.splice(i,1); continue; }
+    if(overlap({x:player.x,y:player.y,w:player.w,h:player.h}, {x:d.x,y:d.y,w:12,h:12})){
+      sound('pick'); if(d.type==='heart') player.hp=Math.min(player.maxHp,player.hp+2);
+      if(d.type==='triforce'){ 
+          player.triforce += 1; 
+          sound('win'); gameState='win'; document.exitPointerLock(); 
+          document.getElementById('ov').style.display='flex'; 
+          document.querySelector('#ov h1').innerText='YOU WON!'; 
+          document.querySelector('#ov p').innerText='Hyrule is saved from Ganon.'; 
+      }
+      updateHUD(); drops.splice(i,1);
+    }
+  }
+}
+function updateParticles(){ particles.forEach(p=>{ p.x+=p.dx; p.y+=p.dy; p.dy+=.08; p.life--; }); particles = particles.filter(p=>p.life>0); }
+
+function interactableHint(){
+  if(gameState!=='play') return '';
+  const t=(maps[currentMapId][Math.floor((player.y+player.h/2)/TILE)]||[])[Math.floor((player.x+player.w/2)/TILE)];
+  if(currentMapId==='overworld' && t===5) return '[ACTION/E] Enter Dungeon';
+  if(currentMapId==='room1' && t===8) return '[ACTION/E] Exit Dungeon';
+  if(currentMapId==='room2' && t===9) return '[ACTION/E] Exit Room';
+  return '';
+}
+
+function updateLogic(){
+  if(gameState!=='play') return;
+  frame++; movePlayer(); 
+  
+  if(sword) { 
+      sword.life--; if(sword.life<=0) sword=null; 
+      else { 
+          for(let i=enemies.length-1;i>=0;i--){ 
+              const e=enemies[i]; if(e.inv>0) continue; 
+              if(overlap(sword,e)){ 
+                  const dx=(e.x+e.w/2)-(player.x+player.w/2), dy=(e.y+e.h/2)-(player.y+player.h/2), d=Math.hypot(dx,dy)||1; 
+                  hitEnemy(i,1,dx/d*3,dy/d*3); 
+              } 
+          } 
+      } 
+  }
+  
+  if(keys.e && !keys._e) { interact(); keys._e=true; }
+  if(!keys.e) keys._e=false;
+  
+  updateProjectiles(); updateEnemies(); updateDrops(); updateParticles();
+  
+  if(messageTimer>0){ 
+      messageTimer--; 
+      if(messageTimer===0) msgText.style.opacity='0'; 
+  }
+  const hint=interactableHint(); hintEl.innerText=hint; hintEl.style.display=hint?'block':'none';
+}
+
+// --- THREE.JS GRAPHICS ---
+let scene, camera, renderer;
+let staticMapGroup = new THREE.Group();
+let dynamicEntitiesGroup = new THREE.Group();
+const meshesDict = new Map();
+let dirLight, hemiLight;
+
+const Geo = {}, Mat = {};
+
+function createNoiseTexture(baseColor, accentColor, type) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128; canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = baseColor; ctx.fillRect(0,0,128,128);
+    for(let i=0; i<800; i++) {
+        ctx.fillStyle = accentColor;
+        if(type === 'grass') ctx.fillRect(Math.random()*128, Math.random()*128, 2, 4+Math.random()*4);
+        else ctx.fillRect(Math.random()*128, Math.random()*128, 4+Math.random()*4, 4+Math.random()*4);
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+    return tex;
+}
+
+function init3D() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb); 
+    scene.fog = new THREE.Fog(0x87ceeb, 200, 800);
+
+    camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 1, 1500);
+    
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.getElementById('game-container').appendChild(renderer.domElement);
+
+    hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6); 
+    hemiLight.position.set(0, 500, 0);
+    scene.add(hemiLight);
+
+    dirLight = new THREE.DirectionalLight(0xffeedd, 0.8);
+    dirLight.castShadow = true;
+    dirLight.shadow.camera.left = -400; dirLight.shadow.camera.right = 400;
+    dirLight.shadow.camera.top = 400; dirLight.shadow.camera.bottom = -400;
+    dirLight.shadow.camera.far = 1500;
+    dirLight.shadow.mapSize.width = 1024; dirLight.shadow.mapSize.height = 1024;
+    scene.add(dirLight);
+    scene.add(dirLight.target);
+
+    Geo.box = new THREE.BoxGeometry(TILE, TILE, TILE);
+    Geo.tallBox = new THREE.BoxGeometry(TILE, TILE * 1.5, TILE);
+    Geo.treeTop = new THREE.DodecahedronGeometry(TILE*0.6, 1); 
+    Geo.trunk = new THREE.CylinderGeometry(4, 5, TILE);
+    Geo.rock = new THREE.DodecahedronGeometry(4, 0);
+    Geo.tallGrass = new THREE.ConeGeometry(2, 10, 4);
+    Geo.door = new THREE.BoxGeometry(24, 32, 4);
+    Geo.sword = new THREE.BoxGeometry(4, 4, 22);
+    Geo.heart = new THREE.BoxGeometry(8, 8, 8); 
+
+    const texGrass = createNoiseTexture('#4d8c31', '#5c9c41', 'grass');
+    texGrass.repeat.set(COLS/2, ROWS/2);
+    const texDungeon = createNoiseTexture('#1a1a1a', '#222222', 'rock');
+    texDungeon.repeat.set(COLS/2, ROWS/2);
+
+    Mat.grassBase = new THREE.MeshStandardMaterial({ map: texGrass, roughness: 1.0 });
+    Mat.wall = new THREE.MeshStandardMaterial({ color: 0x7a6c5d, roughness: 0.9 });
+    Mat.wood = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.8 });
+    Mat.leaves = new THREE.MeshStandardMaterial({ color: 0x3a7022, roughness: 0.9 });
+    Mat.floor = new THREE.MeshStandardMaterial({ map: texDungeon, roughness: 0.7 });
+    Mat.dngWall = new THREE.MeshStandardMaterial({ color: 0x2a3b4c, roughness: 0.6 });
+    Mat.gold = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3, metalness: 0.8 });
+    Mat.tunic = new THREE.MeshStandardMaterial({ color: 0x1d8a1d, roughness: 0.8 });
+    Mat.skin = new THREE.MeshStandardMaterial({ color: 0xf5d0a9, roughness: 0.7 });
+    Mat.brown = new THREE.MeshStandardMaterial({ color: 0x523015, roughness: 0.9 });
+    Mat.sword = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.9, roughness: 0.2 });
+    Mat.enemyOrg = new THREE.MeshStandardMaterial({ color: 0xd4701e, roughness: 0.7 });
+    Mat.enemyBoss = new THREE.MeshStandardMaterial({ color: 0x660066, roughness: 0.5 });
+    Mat.fire = new THREE.MeshBasicMaterial({ color: 0xff5500, transparent: true, opacity: 0.8 });
+    Mat.particle = new THREE.MeshBasicMaterial({ color: 0xffdd55 });
+    Mat.black = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+    
+    scene.add(staticMapGroup);
+    scene.add(dynamicEntitiesGroup);
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+}
+
+function buildStaticMap3D(mapId) {
+    const map = maps[mapId];
+    const isDng = mapId !== 'overworld';
+    const group = new THREE.Group();
+    const planeGeo = new THREE.PlaneGeometry(WIDTH, HEIGHT);
+    const baseFloor = new THREE.Mesh(planeGeo, isDng ? Mat.floor : Mat.grassBase);
+    baseFloor.rotation.x = -Math.PI / 2;
+    baseFloor.position.set(WIDTH / 2, 0, HEIGHT / 2);
+    baseFloor.receiveShadow = true;
+    group.add(baseFloor);
+
+    if (isDng) {
+        scene.background.setHex(0x050505); scene.fog.color.setHex(0x050505);
+        scene.fog.near = 50; scene.fog.far = 300;
+        hemiLight.intensity = 0.2; dirLight.intensity = 0.4;
+    } else {
+        scene.background.setHex(0x87ceeb); scene.fog.color.setHex(0x87ceeb);
+        scene.fog.near = 200; scene.fog.far = 800;
+        hemiLight.intensity = 0.6; dirLight.intensity = 0.8;
+    }
+
+    for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+            let t = map[y][x]; let m = null;
+            let px = x * TILE + TILE / 2; let pz = y * TILE + TILE / 2; let py = TILE / 2;
+
+            if (isDng) {
+                if (t === 1) { m = new THREE.Mesh(Geo.tallBox, Mat.dngWall); py = TILE*0.75; }
+                else if (t === 2) { m = new THREE.Group(); let w = new THREE.Mesh(Geo.tallBox, Mat.dngWall); let d = new THREE.Mesh(Geo.door, Mat.brown); d.position.z = 16; d.position.y = -8; m.add(w); m.add(d); py = TILE*0.75; }
+                else if (t === 3) m = new THREE.Mesh(Geo.box, Mat.floor);
+                else if (t === 5 || t === 8 || t === 9) m = new THREE.Mesh(new THREE.BoxGeometry(TILE, 4, TILE), Mat.gold);
+            } else {
+                if (t === 1) { m = new THREE.Mesh(Geo.tallBox, Mat.wall); py = TILE*0.75; }
+                else if (t === 4) { 
+                    m = new THREE.Group(); 
+                    let trunk = new THREE.Mesh(Geo.trunk, Mat.wood); 
+                    let top = new THREE.Mesh(Geo.treeTop, Mat.leaves); top.position.y = TILE*0.6; 
+                    top.rotation.set(Math.random(), Math.random(), Math.random());
+                    m.add(trunk); m.add(top); 
+                    let s = 0.8 + Math.random()*0.4; m.scale.set(s,s,s);
+                }
+                else if (t === 5) { 
+                    m = new THREE.Group(); let b = new THREE.Mesh(Geo.tallBox, Mat.gold); 
+                    let door = new THREE.Mesh(Geo.door, Mat.black); door.position.z = 16; door.position.y = -8; 
+                    m.add(b); m.add(door); py = TILE*0.75; 
+                }
+                else if (t === 0) {
+                    if (Math.random() < 0.05) { m = new THREE.Mesh(Geo.rock, Mat.wall); m.scale.setScalar(0.5+Math.random()*0.5); m.rotation.set(Math.random(),Math.random(),Math.random()); py = 2; px+=(Math.random()-.5)*16; pz+=(Math.random()-.5)*16; }
+                    else if (Math.random() < 0.2) {
+                        m = new THREE.Group(); let tufts = Math.floor(2+Math.random()*3);
+                        for(let k=0; k<tufts; k++) { let tm = new THREE.Mesh(Geo.tallGrass, Mat.leaves); tm.position.set((Math.random()-.5)*12, 4, (Math.random()-.5)*12); tm.rotation.set((Math.random()-.5)*.3,0,(Math.random()-.5)*.3); m.add(tm); }
+                        py = 0;
+                    }
+                }
+            }
+            if (m) { m.position.set(px, py, pz); m.castShadow = true; m.receiveShadow = true; if(m.isGroup) m.children.forEach(c=>{c.castShadow=true; c.receiveShadow=true;}); group.add(m); }
+        }
+    }
+    return group;
+}
+
+function refresh3DMap() {
+    scene.remove(staticMapGroup);
+    staticMapGroup = buildStaticMap3D(currentMapId);
+    scene.add(staticMapGroup);
+}
+
+function buildPlayer3D() {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(12, 10, 10), Mat.tunic); body.position.y = 8; body.castShadow=true;
+    const head = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), Mat.skin); head.position.y = 18; head.castShadow=true;
+    const eye1 = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 1), Mat.black); eye1.position.set(-2, 2, 5.1);
+    const eye2 = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 1), Mat.black); eye2.position.set(2, 2, 5.1);
+    head.add(eye1); head.add(eye2);
+    const hat = new THREE.Mesh(new THREE.ConeGeometry(5, 8, 4), Mat.tunic); hat.position.y = 26; hat.rotation.x = -0.2; hat.castShadow=true;
+    const shield = new THREE.Mesh(new THREE.BoxGeometry(8, 10, 2), Mat.brown); shield.position.set(0, 8, -6);
+    g.add(shield); g.add(body); g.add(head); g.add(hat);
+    return g;
+}
+
+function getMeshFor(obj, typeStr) {
+    if(!meshesDict.has(obj)) {
+        let mesh;
+        if(typeStr === 'player') mesh = buildPlayer3D();
+        else if(typeStr === 'sword') mesh = new THREE.Mesh(Geo.sword, Mat.sword);
+        else if(typeStr === 'particle') mesh = new THREE.Mesh(new THREE.BoxGeometry(3,3,3), new THREE.MeshBasicMaterial({color: obj.color}));
+        else if(typeStr === 'heart') mesh = new THREE.Mesh(Geo.heart, Mat.fire);
+        else if(typeStr === 'triforce') mesh = new THREE.Mesh(new THREE.TetrahedronGeometry(10), Mat.gold);
+        else if(typeStr === 'fireball') mesh = new THREE.Mesh(new THREE.BoxGeometry(6,6,6), Mat.fire);
+        else {
+            mesh = new THREE.Group();
+            if(typeStr==='boss') { let b = new THREE.Mesh(new THREE.BoxGeometry(28, 28, 28), Mat.enemyBoss); b.position.y=14; mesh.add(b); }
+            else { let b = new THREE.Mesh(new THREE.BoxGeometry(12, 14, 12), Mat.enemyOrg); b.position.y=7; mesh.add(b); }
+            mesh.children.forEach(c=>{c.castShadow=true;});
+        }
+        if(!mesh.isGroup) mesh.castShadow = true;
+        dynamicEntitiesGroup.add(mesh);
+        meshesDict.set(obj, mesh);
+    }
+    return meshesDict.get(obj);
+}
+
+function sync3D() {
+    if(gameState==='title') return;
+    const activeLogicObjects = new Set();
+    
+    if(gameState!=='gameover') {
+        activeLogicObjects.add(player);
+        let pm = getMeshFor(player, 'player');
+        pm.position.set(player.x + player.w/2, 0, player.y + player.h/2);
+        pm.rotation.y = player.visualAngle;
+        pm.visible = !(player.inv > 0 && Math.floor(player.inv/6)%2===1);
+        let bobFreq = player.sprinting ? 0.4 : 0.2; let bobAmp = player.sprinting ? 3 : 1.5;
+        pm.children[1].position.y = player.moving ? 8 + Math.abs(Math.sin(frame*bobFreq)*bobAmp) : 8; 
+    }
+
+    if(sword) {
+        activeLogicObjects.add(sword);
+        let sm = getMeshFor(sword, 'sword');
+        sm.position.set(sword.x + sword.w/2, 10, sword.y + sword.h/2);
+        sm.rotation.y = sword.angle;
+    }
+
+    enemies.forEach(e => {
+        activeLogicObjects.add(e); let m = getMeshFor(e, e.type); m.position.set(e.x + e.w/2, 0, e.y + e.h/2);
+        if(e.dx||e.dy) m.rotation.y = Math.atan2(e.dx, -e.dy);
+        m.visible = !(e.inv > 0 && Math.floor(e.inv/4)%2===1);
+    });
+
+    drops.forEach(d => { activeLogicObjects.add(d); let m = getMeshFor(d, d.type); m.position.set(d.x+6, 5+Math.sin(frame*0.1)*3, d.y+6); m.rotation.y += 0.05; });
+    projectiles.forEach(p => { activeLogicObjects.add(p); let m = getMeshFor(p, p.type); m.position.set(p.x+p.w/2, 10, p.y+p.h/2); });
+    particles.forEach(p => { activeLogicObjects.add(p); let m = getMeshFor(p, 'particle'); m.position.set(p.x, 10 + (24-p.life)*2 - p.dy*2, p.y); m.material.opacity = p.life/24; });
+
+    for(let i = dynamicEntitiesGroup.children.length - 1; i >= 0; i--) {
+        let child = dynamicEntitiesGroup.children[i]; let found = false;
+        for (let [logicObj, mesh] of meshesDict.entries()) { if(mesh === child) { if(!activeLogicObjects.has(logicObj)) { dynamicEntitiesGroup.remove(child); meshesDict.delete(logicObj); } found = true; break; } }
+        if(!found) dynamicEntitiesGroup.remove(child);
+    }
+
+    // Camera Math
+    if (player.moving && Date.now() - lastMouseTime > 2000 && !joyActive) {
+        let diff = player.visualAngle - camYaw;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        camYaw += diff * 0.012; 
+    }
+
+    let p3x = player.x + player.w/2, p3z = player.y + player.h/2, p3y = 8;
+    let camDist = 140;
+    let idealCamX = p3x - Math.sin(camYaw) * camDist * Math.cos(camPitch);
+    let idealCamZ = p3z + Math.cos(camYaw) * camDist * Math.cos(camPitch); // +cos for behind
+    let idealCamY = p3y + Math.sin(camPitch) * camDist;
+    
+    currentCamPos.lerp(new THREE.Vector3(idealCamX, idealCamY, idealCamZ), 0.15);
+    camera.position.copy(currentCamPos);
+    
+    let lookDist = 100;
+    let idealLookX = p3x + Math.sin(camYaw) * lookDist;
+    let idealLookZ = p3z - Math.cos(camYaw) * lookDist; // -cos for forward
+    let idealLookY = p3y + 10 - Math.sin(camPitch)*20;
+    
+    currentLookTarget.lerp(new THREE.Vector3(idealLookX, idealLookY, idealLookZ), 0.25);
+    camera.lookAt(currentLookTarget);
+
+    let targetFOV = player.sprinting ? 75 : 65;
+    if(Math.abs(camera.fov - targetFOV) > 0.5) { camera.fov += (targetFOV - camera.fov) * 0.1; camera.updateProjectionMatrix(); }
+
+    dirLight.position.set(p3x + 200, 400, p3z + 200);
+    dirLight.target.position.set(p3x, 0, p3z);
+    dirLight.target.updateMatrixWorld();
+}
+
+function gameLoop() {
+    requestAnimationFrame(gameLoop);
+    updateLogic();
+    sync3D();
+    renderer.render(scene, camera);
+}
+
+window.onload = function() {
+    init3D();
+    gameLoop();
+};
+</script>
+</body>
+</html>
