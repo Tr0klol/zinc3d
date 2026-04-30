@@ -18,16 +18,16 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
 #hud-bombs { position: absolute; top: 70px; left: 30px; color: #fff; font-size: 20px; text-shadow: 3px 3px 0 #000; pointer-events: none; z-index: 10; }
 #hud-triforce { position: absolute; top: 30px; right: 30px; color: #ffd700; font-size: 20px; text-shadow: 3px 3px 0 #000; pointer-events: none; display: none; z-index: 10; }
 
-#msg-container { position: absolute; bottom: 80px; width: 100%; text-align: center; pointer-events: none; }
+#msg-container { position: absolute; bottom: 80px; width: 100%; text-align: center; pointer-events: none; z-index: 15; }
 #msg { padding: 16px 30px; background: #000; border: 4px solid #fff; font-size: 14px; color: #fff; display: inline-block; box-shadow: 6px 6px 0 #000; transition: opacity 0.3s; text-shadow: 2px 2px 0 #444; line-height: 1.5; }
 
-#ov { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; pointer-events: auto; backdrop-filter: blur(4px); }
+#ov { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 40; pointer-events: auto; backdrop-filter: blur(4px); }
 #ov h1 { font-size: 48px; color: #fff; text-shadow: 6px 6px 0 #555; margin-bottom: 20px; text-align: center; line-height: 1.4; }
 #ov p { color: #ccc; font-size: 14px; margin: 12px 0; text-align: center; max-width: 80%; text-shadow: 2px 2px 0 #000; line-height: 1.6; }
 #ov .go { background: #000; color: #fff; border: 4px solid #fff; border-radius: 0; padding: 16px 32px; margin-top: 40px; font-size: 16px; box-shadow: 6px 6px 0 #555; transition: transform 0.1s; cursor: pointer; text-transform: uppercase; }
 #ov .go:hover { transform: translate(2px, 2px); box-shadow: 4px 4px 0 #555; }
 
-#interaction-hint { position: absolute; bottom: 25%; left: 50%; transform: translateX(-50%); background: #000; padding: 12px 24px; border: 4px solid #fff; font-size: 12px; color: #fff; display: none; pointer-events: none; z-index: 4; text-shadow: 2px 2px 0 #444; box-shadow: 6px 6px 0 #000; }
+#interaction-hint { position: absolute; bottom: 25%; left: 50%; transform: translateX(-50%); background: #000; padding: 12px 24px; border: 4px solid #fff; font-size: 12px; color: #fff; display: none; pointer-events: none; z-index: 10; text-shadow: 2px 2px 0 #444; box-shadow: 6px 6px 0 #000; }
 
 #crosshair { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.5); border-radius: 50%; transform: translate(-50%, -50%); z-index: 10; pointer-events: none; display: none; box-shadow: 0 0 6px rgba(255,255,255,0.6); }
 
@@ -39,7 +39,7 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
 #joystick-base { position: absolute; bottom: 40px; left: 40px; width: 130px; height: 130px; background: rgba(255,255,255,0.05); border: 4px solid rgba(255,255,255,0.2); border-radius: 50%; display: none; pointer-events: none; }
 #joystick-stick { position: absolute; top: 50%; left: 50%; width: 56px; height: 56px; background: rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; backdrop-filter: blur(4px); }
 
-.action-btn { position: absolute; background: rgba(0,0,0,0.6); border: 4px solid #fff; display: flex; align-items: center; justify-content: center; color: #fff; pointer-events: auto; user-select: none; box-shadow: 4px 4px 0 #000; transition: transform 0.1s; }
+.action-btn { position: absolute; background: rgba(0,0,0,0.6); border: 4px solid #fff; display: flex; align-items: center; justify-content: center; color: #fff; pointer-events: auto; user-select: none; box-shadow: 4px 4px 0 #000; transition: transform 0.1s; z-index: 15; }
 .action-btn:active { background: rgba(50,50,50,0.8); transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
 
 #btn-sword { bottom: 40px; right: 110px; width: 85px; height: 85px; font-size: 28px;}
@@ -47,6 +47,13 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
 #btn-bomb { bottom: 135px; right: 110px; width: 65px; height: 65px; font-size: 22px; }
 #btn-roll { bottom: 135px; right: 25px; width: 65px; height: 65px; font-size: 10px; text-align: center; }
 #btn-interact { bottom: 220px; right: 65px; width: 65px; height: 65px; font-size: 10px; text-align: center; }
+
+/* Pong UI */
+#pong-ui { display: none; position: absolute; inset: 0; z-index: 30; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; backdrop-filter: blur(8px); }
+#pong-ui h2 { color: #00ffcc; text-shadow: 4px 4px 0 #0088aa; margin-bottom: 30px; font-size: 32px; letter-spacing: 2px; }
+#pong-canvas { border: 4px solid #fff; box-shadow: 0 0 20px rgba(0, 255, 204, 0.4); background: #050505; max-width: 90%; }
+#exit-pong-btn { background: #000; border: 4px solid #ff4444; color: #ff4444; box-shadow: 4px 4px 0 #550000; margin-top: 30px; padding: 12px 24px; font-family: 'Press Start 2P', monospace; cursor: pointer; transition: transform 0.1s; }
+#exit-pong-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #550000; }
 
 @media (max-width: 768px) { 
     #hud-hearts { font-size: 16px; top: 20px; left: 20px; text-shadow: 2px 2px 0 #000; }
@@ -60,6 +67,8 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
     #ov .go { padding: 12px 24px; font-size: 12px; }
     #msg { font-size: 10px; padding: 12px 20px; }
     #interaction-hint { font-size: 10px; padding: 8px 16px; width: 80%; text-align: center; }
+    #pong-ui h2 { font-size: 20px; }
+    #pong-canvas { width: 100%; height: auto; }
 }
 @media (min-width: 769px) { #ov p.mobile-only { display: none; } }
 </style>
@@ -90,6 +99,12 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
     <div class="action-btn" id="btn-interact">Action</div>
 </div>
 
+<div id="pong-ui">
+    <h2>ZINC PONG</h2>
+    <canvas id="pong-canvas" width="600" height="400"></canvas>
+    <div id="exit-pong-btn">EXIT ARCADE (E)</div>
+</div>
+
 <div id="ov">
     <h1>LEGEND OF ZINC 3D</h1>
     <p class="pc-only"><b>Mouse</b> - Look Around (Pointer Lock) · <b>WASD</b> - Move</p>
@@ -112,14 +127,12 @@ const triEl = document.getElementById('htf');
 const hintEl = document.getElementById('interaction-hint');
 const crosshairEl = document.getElementById('crosshair');
 
-// Compact 24x16 map size for dense, focused gameplay
 const TILE = 32, COLS = 24, ROWS = 16, WIDTH = COLS*TILE, HEIGHT = ROWS*TILE;
-let gameState = 'title';
+let gameState = 'title'; // 'title', 'play', 'pong', 'gameover', 'win'
 let frame = 0;
 let keys = {};
 let lastMouseTime = 0;
 
-// Camera State
 let camYaw = Math.PI; 
 let camPitch = Math.PI / 8;
 let currentCamPos = new THREE.Vector3(WIDTH/2, 300, HEIGHT/2 + 240);
@@ -141,10 +154,18 @@ function makeBorderedMap() {
 
 const overworldMap = makeBorderedMap();
 overworldMap[0][11] = 5; overworldMap[0][12] = 5; 
+
+// Hidden Arcade Machine Setup
+overworldMap[2][4] = 6; // Arcade Machine Tile
+overworldMap[3][4] = 4; // Front Tree Hiding it
+overworldMap[2][3] = 4; // Left Tree
+overworldMap[2][5] = 4; // Right Tree
+
 for(let i=0; i<45; i++) {
     let tx = 1 + Math.floor(Math.random()*(COLS-2));
     let ty = 1 + Math.floor(Math.random()*(ROWS-2));
     if(tx > 9 && tx < 14) continue; 
+    if(tx >= 3 && tx <= 5 && ty >= 1 && ty <= 4) continue; // Protect arcade cluster
     if(overworldMap[ty][tx] === 0) overworldMap[ty][tx] = 4;
 }
 
@@ -178,6 +199,7 @@ let player = {
 };
 
 let fairy = { x: 0, y: 0, z: 20 };
+let pong = { x: 300, y: 200, dx: 5, dy: 5, p1y: 160, p2y: 160, p1s: 0, p2s: 0, w: 600, h: 400, beaten: false };
 
 let enemies=[], projectiles=[], drops=[], particles=[], bombsList=[], explosions=[];
 let sword=null;
@@ -223,15 +245,12 @@ document.addEventListener('keyup',e=>{
 
 document.getElementById('start-btn').addEventListener('click', () => {
     startGame();
-    try {
-        if(window.innerWidth > 768) document.body.requestPointerLock();
-    } catch (err) {}
+    try { if(window.innerWidth > 768) document.body.requestPointerLock(); } catch (err) {}
 });
 
 document.addEventListener('mousemove', e => {
-    if (document.pointerLockElement) {
-        let mx = e.movementX || 0;
-        let my = e.movementY || 0;
+    if (document.pointerLockElement && gameState === 'play') {
+        let mx = e.movementX || 0; let my = e.movementY || 0;
         if (!isNaN(mx)) camYaw += mx * 0.0025;
         if (!isNaN(my)) camPitch += my * 0.0025;
         camPitch = Math.max(-0.1, Math.min(Math.PI/2.2, camPitch));
@@ -239,7 +258,6 @@ document.addEventListener('mousemove', e => {
     }
 });
 
-// PC Actions
 document.body.addEventListener('mousedown', e => {
     if (document.pointerLockElement && gameState === 'play') {
         if (e.button === 0) {
@@ -256,8 +274,7 @@ document.body.addEventListener('mouseup', e => {
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 // Mobile Touch Controls
-let joyActive = false, joyTouchId = null;
-let joyBaseX = 0, joyBaseY = 0, joyDX = 0, joyDY = 0;
+let joyActive = false, joyTouchId = null, joyBaseX = 0, joyBaseY = 0, joyDX = 0, joyDY = 0;
 let lookTouchId = null, lastLookX = 0, lastLookY = 0;
 
 const joyBaseEl = document.getElementById('joystick-base');
@@ -272,7 +289,6 @@ document.getElementById('touch-move-zone').addEventListener('touchstart', e => {
     joyBaseEl.style.left = (joyBaseX - 60) + 'px'; joyBaseEl.style.top = (joyBaseY - 60) + 'px';
     joyStickEl.style.transform = `translate(-50%, -50%)`;
 });
-
 document.getElementById('touch-move-zone').addEventListener('touchmove', e => {
     e.preventDefault();
     for(let i=0; i<e.changedTouches.length; i++) {
@@ -286,7 +302,6 @@ document.getElementById('touch-move-zone').addEventListener('touchmove', e => {
         }
     }
 });
-
 function endJoy(e) {
     for(let i=0; i<e.changedTouches.length; i++) {
         if(e.changedTouches[i].identifier === joyTouchId) {
@@ -304,6 +319,7 @@ document.getElementById('touch-look-zone').addEventListener('touchstart', e => {
 });
 document.getElementById('touch-look-zone').addEventListener('touchmove', e => {
     e.preventDefault();
+    if(gameState !== 'play') return;
     for(let i=0; i<e.changedTouches.length; i++) {
         if(e.changedTouches[i].identifier === lookTouchId) {
             let dx = e.changedTouches[i].clientX - lastLookX;
@@ -322,19 +338,16 @@ function endLook(e) {
 document.getElementById('touch-look-zone').addEventListener('touchend', endLook);
 document.getElementById('touch-look-zone').addEventListener('touchcancel', endLook);
 
-// Mobile Action Buttons - WITH STRICT NULL GUARDS to prevent fatal crashes
 const bindBtn = (id, actionDown, actionUp) => {
     const el = document.getElementById(id);
-    if (!el) return; // CRITICAL: Prevent Javascript halting if button is missing in HTML
+    if (!el) return; 
     el.addEventListener('touchstart', e => { e.preventDefault(); actionDown(); });
     el.addEventListener('touchend', e => { e.preventDefault(); actionUp(); });
 };
 bindBtn('btn-sword', () => { 
     if(!keys._sword_pressed){ swingSword(); keys._sword_pressed=true; player.swordCharge=0; }
     keys._sword_held=true; 
-}, () => { 
-    keys._sword_held=false; keys._sword_pressed=false; 
-});
+}, () => { keys._sword_held=false; keys._sword_pressed=false; });
 bindBtn('btn-bomb', () => { if(!keys._bomb){ placeBomb(); keys._bomb=true; } }, () => { keys._bomb=false; });
 bindBtn('btn-sprint', () => keys.shift=true, () => keys.shift=false);
 bindBtn('btn-roll', () => { keys.space=true; setTimeout(()=>keys.space=false, 100); }, () => {});
@@ -353,18 +366,15 @@ function updateHUD(){
   bombEl.innerText = player.bombs;
   triEl.innerText = `${player.triforce}/1`;
   
-  if (player.triforce > 0) {
-      document.getElementById('hud-triforce').style.display = 'block';
-  } else {
-      document.getElementById('hud-triforce').style.display = 'none';
-  }
+  if (player.triforce > 0) document.getElementById('hud-triforce').style.display = 'block';
+  else document.getElementById('hud-triforce').style.display = 'none';
 
   if(gameState === 'play' && window.innerWidth > 768) crosshairEl.style.display = 'block';
   else crosshairEl.style.display = 'none';
 }
 
 function isSolid(tile, mapId){
-    if(mapId==='overworld') return tile===1 || tile===4; 
+    if(mapId==='overworld') return tile===1 || tile===4 || tile===6; 
     return tile===1 || tile===2; 
 }
 function collides(x,y,w,h,mapId){
@@ -397,6 +407,8 @@ function resetGame(){
   camYaw = Math.PI; camPitch = Math.PI / 8; 
   player.visualAngle = Math.atan2(Math.sin(camYaw || 0), -Math.cos(camYaw || 0));
   fairy.x = player.x; fairy.y = player.y; fairy.z = 20;
+  
+  pong.beaten = false;
   
   spawnEnemies('overworld');
   projectiles=[]; drops=[]; particles=[]; bombsList=[]; explosions=[]; sword=null;
@@ -491,7 +503,6 @@ function swingSword(){
   if(gameState!=='play') return; if(sword) return; sound('sword');
   const len=24; 
   let sx = player.x + player.w/2 - len/2 + Math.sin(player.visualAngle || 0) * 16;
-  // Fixed inverted sign so it spawns in front of the player
   let sy = player.y + player.h/2 - len/2 + Math.cos(player.visualAngle || 0) * 16; 
   sword={x:sx,y:sy,w:len,h:len,life:12, maxLife:12, angle: player.visualAngle || 0};
 }
@@ -506,11 +517,120 @@ function overlap(a,b){return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b
 
 function interact(){
   if(gameState!=='play' || player.rollTimer>0) return;
+  // Arcade Check (Location: Center ~ x:144, y:80)
+  if(currentMapId==='overworld' && Math.hypot((player.x+player.w/2)-144, (player.y+player.h/2)-80) < 45) {
+      startPong();
+  }
 }
 
+// --- PONG MINIGAME LOGIC ---
+function startPong() {
+    gameState = 'pong';
+    pong.x = pong.w/2; pong.y = pong.h/2; 
+    pong.dx = 6; pong.dy = -6;
+    pong.p1y = 160; pong.p2y = 160;
+    pong.p1s = 0; pong.p2s = 0;
+    
+    document.getElementById('mobile-ui').style.display = 'none';
+    document.getElementById('ui-layer').style.display = 'none';
+    document.getElementById('pong-ui').style.display = 'flex';
+    try { document.exitPointerLock(); } catch(e){}
+}
+
+document.getElementById('exit-pong-btn').addEventListener('click', () => {
+    if(gameState === 'pong') exitPong();
+});
+
+function exitPong() {
+    gameState = 'play';
+    if(window.innerWidth <= 768) document.getElementById('mobile-ui').style.display = 'block';
+    document.getElementById('ui-layer').style.display = 'flex';
+    document.getElementById('pong-ui').style.display = 'none';
+    keys.e = false; 
+    keys._e = true;
+    lastMouseTime = Date.now();
+    try { if(window.innerWidth > 768) document.body.requestPointerLock(); } catch(e){}
+}
+
+function updatePong() {
+    if(keys.e && !keys._e) { exitPong(); keys._e=true; return; }
+    
+    let moveSpeed = 6;
+    if (keys.w || keys.arrowup) pong.p1y -= moveSpeed;
+    if (keys.s || keys.arrowdown) pong.p1y += moveSpeed;
+    if (joyActive) pong.p1y += joyDY * moveSpeed * 1.5;
+    
+    pong.p1y = Math.max(0, Math.min(pong.h - 80, pong.p1y));
+    
+    // Simple AI
+    let aiCenter = pong.p2y + 40;
+    if (aiCenter < pong.y - 15) pong.p2y += 4.5;
+    else if (aiCenter > pong.y + 15) pong.p2y -= 4.5;
+    pong.p2y = Math.max(0, Math.min(pong.h - 80, pong.p2y));
+    
+    pong.x += pong.dx; 
+    pong.y += pong.dy;
+    
+    if (pong.y <= 0 || pong.y >= pong.h) { pong.dy *= -1; sound('hit'); }
+    
+    // Paddle Collisions
+    if (pong.x <= 30 && pong.x >= 15 && pong.y >= pong.p1y && pong.y <= pong.p1y + 80) {
+        pong.dx = Math.abs(pong.dx) + 0.2; 
+        pong.dy += (pong.y - (pong.p1y + 40)) * 0.1;
+        pong.x = 30; 
+        sound('block');
+    }
+    if (pong.x >= pong.w - 30 && pong.x <= pong.w - 15 && pong.y >= pong.p2y && pong.y <= pong.p2y + 80) {
+        pong.dx = -Math.abs(pong.dx) - 0.2; 
+        pong.dy += (pong.y - (pong.p2y + 40)) * 0.1;
+        pong.x = pong.w - 30; 
+        sound('block');
+    }
+    
+    if (pong.x < 0) { pong.p2s++; sound('die'); resetPongBall(); }
+    if (pong.x > pong.w) { pong.p1s++; sound('win'); resetPongBall(); }
+    
+    if(pong.p1s >= 5 && !pong.beaten) {
+        pong.beaten = true;
+        showMessage("Arcade Beaten! +3 Bombs!");
+        player.bombs += 3;
+        updateHUD();
+        exitPong();
+    } else if (pong.p2s >= 5) {
+        showMessage("You lost the arcade game.");
+        exitPong();
+    }
+}
+
+function resetPongBall() {
+    pong.x = pong.w/2; 
+    pong.y = pong.h/2; 
+    pong.dx = (Math.random() > 0.5 ? 5 : -5);
+    pong.dy = (Math.random() > 0.5 ? 4 : -4);
+}
+
+function drawPong() {
+    const canvas = document.getElementById('pong-canvas');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    ctx.fillStyle = '#050505'; 
+    ctx.fillRect(0, 0, pong.w, pong.h);
+    
+    ctx.fillStyle = '#00ffcc';
+    for(let i=0; i<pong.h; i+=30) ctx.fillRect(pong.w/2 - 2, i, 4, 15);
+    
+    ctx.fillRect(15, pong.p1y, 15, 80);
+    ctx.fillRect(pong.w - 30, pong.p2y, 15, 80);
+    ctx.fillRect(pong.x - 6, pong.y - 6, 12, 12);
+    
+    ctx.font = '36px "Press Start 2P"';
+    ctx.fillText(pong.p1s, pong.w/4 - 20, 60);
+    ctx.fillText(pong.p2s, pong.w*3/4 - 20, 60);
+}
+// --- END PONG LOGIC ---
+
 function movePlayer(){
-  if(gameState!=='play') return;
-  
   let ix = 0, iy = 0;
   if(keys.a) ix -= 1; if(keys.d) ix += 1;
   if(keys.w) iy -= 1; if(keys.s) iy += 1;
@@ -554,14 +674,13 @@ function movePlayer(){
       }
   }
 
-  // Tighter roll with cooldown
   if (keys.space && player.rollTimer === 0 && player.rollCooldown === 0 && player.isSpinning === 0 && !sword) {
-      player.rollTimer = 15; // Shorter roll duration
-      player.rollCooldown = 35; // Added cooldown
+      player.rollTimer = 15; 
+      player.rollCooldown = 35; 
       sound('roll');
       let rollAng = player.visualAngle;
       if (mag > 0.1) rollAng = Math.atan2(dx, dy);
-      player.rollDx = Math.sin(rollAng || 0) * player.sprintSpeed * 1.25; // Slower speed multiplier
+      player.rollDx = Math.sin(rollAng || 0) * player.sprintSpeed * 1.25; 
       player.rollDy = Math.cos(rollAng || 0) * player.sprintSpeed * 1.25;
       player.visualAngle = rollAng; 
   }
@@ -691,11 +810,11 @@ function updateDrops(){
 function updateParticles(){ particles.forEach(p=>{ p.x+=p.dx; p.y+=p.dy; p.dy+=.08; p.life--; }); particles = particles.filter(p=>p.life>0); }
 
 function interactableHint(){
+  if(currentMapId==='overworld' && Math.hypot((player.x+player.w/2)-144, (player.y+player.h/2)-80) < 45) return '[E] PLAY ARCADE';
   return '';
 }
 
 function updateLogic(){
-  if(gameState!=='play') return;
   frame++; movePlayer(); 
   
   if (keys._sword_held && player.rollTimer === 0 && !sword) {
@@ -834,6 +953,8 @@ function init3D() {
     Mat.particle = new THREE.MeshBasicMaterial({ color: 0xffdd55 });
     Mat.black = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
     Mat.bombDark = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.5 });
+    Mat.arcade = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
+    Mat.screen = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
     
     scene.add(staticMapGroup);
     scene.add(dynamicEntitiesGroup);
@@ -884,6 +1005,16 @@ function buildStaticMap3D(mapId) {
                     m = new THREE.Group(); let b = new THREE.Mesh(Geo.tallBox, Mat.gold); 
                     let door = new THREE.Mesh(Geo.door, Mat.black); door.position.z = 16; door.position.y = -8; 
                     m.add(b); m.add(door); py = TILE*0.75; 
+                }
+                else if (t === 6) { 
+                    m = new THREE.Group(); 
+                    let cab = new THREE.Mesh(new THREE.BoxGeometry(TILE*0.9, TILE*1.5, TILE*0.9), Mat.arcade); 
+                    cab.position.y = TILE*0.75; 
+                    let screen = new THREE.Mesh(new THREE.PlaneGeometry(TILE*0.7, TILE*0.5), Mat.screen); 
+                    screen.position.set(0, TILE*1.1, TILE*0.46); 
+                    m.add(cab); m.add(screen); 
+                    m.rotation.y = -Math.PI/6; 
+                    py = 0; 
                 }
                 else if (t === 0) {
                     if (Math.random() < 0.05) { m = new THREE.Mesh(Geo.rock, Mat.wall); m.scale.setScalar(0.5+Math.random()*0.5); m.rotation.set(Math.random(),Math.random(),Math.random()); py = 2; px+=(Math.random()-.5)*16; pz+=(Math.random()-.5)*16; }
@@ -1173,7 +1304,8 @@ function gameLoop(currentTime) {
     accumulator += deltaTime;
     
     while (accumulator >= timeStep) {
-        updateLogic();
+        if (gameState === 'play') updateLogic();
+        else if (gameState === 'pong') updatePong();
         accumulator -= timeStep;
     }
 
@@ -1192,6 +1324,7 @@ function gameLoop(currentTime) {
     
     sync3D();
     if (renderer && scene && camera) renderer.render(scene, camera);
+    if (gameState === 'pong') drawPong();
 }
 
 init3D();
