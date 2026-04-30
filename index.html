@@ -16,7 +16,7 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
 
 #hud-hearts { position: absolute; top: 30px; left: 30px; color: #ff4444; font-size: 24px; text-shadow: 3px 3px 0 #000; pointer-events: none; z-index: 10; letter-spacing: 2px; }
 #hud-bombs { position: absolute; top: 70px; left: 30px; color: #fff; font-size: 20px; text-shadow: 3px 3px 0 #000; pointer-events: none; z-index: 10; }
-#hud-triforce { position: absolute; top: 30px; right: 30px; color: #44eeff; font-size: 20px; text-shadow: 3px 3px 0 #000; pointer-events: none; z-index: 10; }
+#hud-triforce { position: absolute; top: 30px; right: 30px; color: #44eeff; font-size: 20px; text-shadow: 3px 3px 0 #000; pointer-events: none; display: none; z-index: 10; }
 
 #msg-container { position: absolute; bottom: 80px; width: 100%; text-align: center; pointer-events: none; z-index: 15; }
 #msg { padding: 16px 30px; background: #000; border: 4px solid #fff; font-size: 14px; color: #fff; display: inline-block; box-shadow: 6px 6px 0 #000; transition: opacity 0.3s; text-shadow: 2px 2px 0 #444; line-height: 1.5; }
@@ -113,6 +113,7 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
     <p class="pc-only"><b>Key E</b> - Interact</p>
     <p class="mobile-only"><b>Left Side</b> - Move · <b>Right Side</b> - Look</p>
     <p class="mobile-only">Use on-screen buttons to Attack, Roll, Bomb, and Sprint.</p>
+    <p style="color:#00ffcc; margin-top: 10px;"><b>🎮 Gamepad Supported:</b> Move/Look with Sticks. Attack(X), Roll(A), Bomb(Y), Interact(B), Sprint(Bumpers)</p>
     <br>
     <p>Awaken, Hero. Claim the blade, brave the two outer temples, and breach the Obsidian Gate to defeat Gargantua!</p>
     <div class="go" id="start-btn">AWAKEN</div>
@@ -311,6 +312,7 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 // Mobile Touch Controls
 let joyActive = false, joyTouchId = null, joyBaseX = 0, joyBaseY = 0, joyDX = 0, joyDY = 0;
 let lookTouchId = null, lastLookX = 0, lastLookY = 0;
+let gpDX = 0, gpDY = 0; 
 
 const joyBaseEl = document.getElementById('joystick-base');
 const joyStickEl = document.getElementById('joystick-stick');
@@ -389,6 +391,63 @@ bindBtn('btn-sprint', () => keys.shift=true, () => keys.shift=false);
 bindBtn('btn-roll', () => { keys.space=true; setTimeout(()=>keys.space=false, 100); }, () => {});
 bindBtn('btn-interact', () => { keys.e=true; setTimeout(()=>keys.e=false, 100); }, () => {});
 
+// --- GAMEPAD SUPPORT ---
+function updateGamepad() {
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const gp = gamepads[0]; 
+    if (!gp) { gpDX = 0; gpDY = 0; return; }
+
+    const deadzone = 0.2;
+    
+    let ax0 = gp.axes[0], ax1 = gp.axes[1];
+    gpDX = Math.abs(ax0) > deadzone ? ax0 : 0;
+    gpDY = Math.abs(ax1) > deadzone ? ax1 : 0;
+
+    if (gameState === 'play') {
+        let ax2 = gp.axes[2], ax3 = gp.axes[3];
+        if (Math.abs(ax2) > deadzone) camYaw += ax2 * 0.05;
+        if (Math.abs(ax3) > deadzone) {
+            camPitch += ax3 * 0.05;
+            camPitch = Math.max(-0.1, Math.min(Math.PI/2.2, camPitch));
+        }
+    }
+
+    keys.space = gp.buttons[0]?.pressed || false; 
+    keys.shift = gp.buttons[4]?.pressed || gp.buttons[5]?.pressed || gp.buttons[6]?.pressed || gp.buttons[7]?.pressed || false;
+
+    if(gp.buttons[3]?.pressed && !keys._gp_bomb) {
+        placeBomb(); keys._gp_bomb = true;
+    } else if (!gp.buttons[3]?.pressed) {
+        keys._gp_bomb = false;
+    }
+
+    if(gp.buttons[1]?.pressed && !keys._gp_e) {
+        if (gameState === 'pong') exitPong();
+        else interact(); 
+        keys._gp_e = true;
+    } else if (!gp.buttons[1]?.pressed) {
+        keys._gp_e = false;
+    }
+
+    if (gp.buttons[2]?.pressed && player.hasSword && gameState === 'play') {
+        if (!keys._gp_sword) {
+            if(!keys._sword_pressed) { swingSword(); keys._sword_pressed = true; player.swordCharge = 0; }
+            keys._sword_held = true;
+            keys._gp_sword = true;
+        }
+    } else {
+        if(keys._gp_sword) {
+            keys._sword_held = false;
+            keys._sword_pressed = false;
+            keys._gp_sword = false;
+        }
+    }
+
+    if (gp.buttons[9]?.pressed || gp.buttons[8]?.pressed) { 
+        if (gameState === 'title' || gameState === 'gameover' || gameState === 'win') startGame();
+    }
+}
+
 // --- GAME LOGIC ---
 function showMessage(text,ttl=180){ 
     msgText.innerText=text; 
@@ -420,7 +479,7 @@ function collides(x,y,w,h,mapId){
   const x1=Math.floor(x/TILE),x2=Math.floor((x+w-1)/TILE),y1=Math.floor(y/TILE),y2=Math.floor((y+h-1)/TILE);
   for(let ty=y1;ty<=y2;ty++) {
       for(let tx=x1;tx<=x2;tx++){ 
-          if (ty < 0 || ty >= ROWS || tx < 0 || tx >= COLS) return true; // Off grid protection
+          if (ty < 0 || ty >= ROWS || tx < 0 || tx >= COLS) return true; 
           const t=(map[ty]||[])[tx]; 
           if(t!==undefined && isSolid(t, mapId)) return true; 
       }
@@ -431,7 +490,7 @@ function collides(x,y,w,h,mapId){
 function spawnEnemies(mapId){
   enemies=[];
   if(mapId === 'd1_r1' && !d1Cleared){
-      d1_r1[0][11] = 2; d1_r1[0][12] = 2; // Ensure door is locked when enemies spawn
+      d1_r1[0][11] = 2; d1_r1[0][12] = 2; // Ensure door is locked
       enemies.push({type:'moblin', subType:'forest', x: 6*TILE, y: 6*TILE, hp:3, mhp:3, spd:0.8, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
       enemies.push({type:'moblin', subType:'forest', x: 18*TILE, y: 6*TILE, hp:3, mhp:3, spd:0.8, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
       enemies.push({type:'moblin', subType:'forest', x: 12*TILE, y: 10*TILE, hp:3, mhp:3, spd:0.8, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
@@ -440,7 +499,7 @@ function spawnEnemies(mapId){
       enemies.push({type:'boss', subType:'forest', x: 12*TILE-16, y: 6*TILE, hp:8, mhp:8, spd:0, w:32, h:32, dx:0, dy:0, tm:0, inv:0});
   }
   if(mapId === 'd2_r1' && !d2Cleared){
-      d2_r1[0][11] = 2; d2_r1[0][12] = 2; // Ensure door is locked when enemies spawn
+      d2_r1[0][11] = 2; d2_r1[0][12] = 2; // Ensure door is locked
       enemies.push({type:'moblin', subType:'fire', x: 6*TILE, y: 6*TILE, hp:4, mhp:4, spd:1.0, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
       enemies.push({type:'moblin', subType:'fire', x: 18*TILE, y: 6*TILE, hp:4, mhp:4, spd:1.0, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
       enemies.push({type:'moblin', subType:'fire', x: 12*TILE, y: 10*TILE, hp:4, mhp:4, spd:1.0, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
@@ -646,10 +705,10 @@ function updatePong() {
     if (keys.w || keys.arrowup) pong.p1y -= moveSpeed;
     if (keys.s || keys.arrowdown) pong.p1y += moveSpeed;
     if (joyActive) pong.p1y += joyDY * moveSpeed * 1.5;
+    else if (gpDY !== 0) pong.p1y += gpDY * moveSpeed * 1.5;
     
     pong.p1y = Math.max(0, Math.min(pong.h - 80, pong.p1y));
     
-    // Simple AI
     let aiCenter = pong.p2y + 40;
     if (aiCenter < pong.y - 15) pong.p2y += 4.5;
     else if (aiCenter > pong.y + 15) pong.p2y -= 4.5;
@@ -660,7 +719,6 @@ function updatePong() {
     
     if (pong.y <= 0 || pong.y >= pong.h) { pong.dy *= -1; sound('hit'); }
     
-    // Paddle Collisions
     if (pong.x <= 30 && pong.x >= 15 && pong.y >= pong.p1y && pong.y <= pong.p1y + 80) {
         pong.dx = Math.abs(pong.dx) + 0.2; 
         pong.dy += (pong.y - (pong.p1y + 40)) * 0.1;
@@ -722,6 +780,7 @@ function movePlayer(){
   if(keys.a) ix -= 1; if(keys.d) ix += 1;
   if(keys.w) iy -= 1; if(keys.s) iy += 1;
   if(joyActive) { ix = joyDX; iy = joyDY; }
+  else if(gpDX !== 0 || gpDY !== 0) { ix = gpDX; iy = gpDY; }
 
   let mag = Math.hypot(ix, iy);
   if(mag > 1) { ix /= mag; iy /= mag; mag = 1; }
@@ -794,7 +853,6 @@ function movePlayer(){
   if(!collides(nxp+2,player.y+2,player.w-4,player.h-4,currentMapId)) player.x=nxp;
   if(!collides(player.x+2,nyp+2,player.w-4,player.h-4,currentMapId)) player.y=nyp;
   
-  // Transition logic explicitly checking coordinates before collisions
   if(currentMapId==='spawn' && player.y < 4.0*TILE) {
       loadMap('overworld', 11.5*TILE, 13.5*TILE, 0, 'Welcome to Zincolia.');
   }
@@ -825,6 +883,7 @@ function updateEnemies(){
   for(const e of enemies){
     if(e.inv>0) e.inv--; e.tm++;
     const dx=player.x-e.x, dy=player.y-e.y, dist=Math.hypot(dx,dy);
+    let angleToPlayer = Math.atan2((player.y+player.h/2) - (e.y+e.h/2), (player.x+player.w/2) - (e.x+e.w/2));
     
     if(e.type==='moblin'){
       if(dist<150 && e.tm%30===0){ e.dx=Math.sign(dx || 0); e.dy=Math.sign(dy || 0); }
@@ -833,16 +892,46 @@ function updateEnemies(){
       if(!collides(nx,ny,e.w,e.h,currentMapId)){ e.x=nx; e.y=ny; } else { e.dx=-e.dx; e.dy=-e.dy; }
     }
     
+    // --- UNIQUE BOSS AI PATTERNS ---
     if(e.type==='boss'){
-      if(e.tm%180===0){ e.x = 4*TILE + Math.random()*16*TILE; e.y = 2*TILE + Math.random()*8*TILE; } 
-      
-      let rate = e.subType === 'final' ? 90 : 120;
-      let countMod = e.subType === 'final' ? 2 : 0;
-      if(e.tm % rate === 0) {
-          let count = (e.hp <= e.mhp/2 ? 6 : 4) + countMod;
-          for(let k=0;k<count;k++){ 
-              const ang=(Math.PI*2/count)*k; 
-              projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:10,h:10,dx:Math.cos(ang)*2.0,dy:Math.sin(ang)*2.0,life:150}); 
+      if(e.subType === 'forest') {
+          if(e.tm%200===0){ e.x = 4*TILE + Math.random()*16*TILE; e.y = 2*TILE + Math.random()*8*TILE; }
+          if(e.tm%100===0) {
+              // 3-way aimed spread shot
+              for(let k=-1; k<=1; k++) {
+                  let ang = angleToPlayer + k*0.3;
+                  projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:10,h:10,dx:Math.cos(ang)*2.5,dy:Math.sin(ang)*2.5,life:150});
+              }
+          }
+          // Summon minion occasionally
+          if(e.tm%300===0 && enemies.length < 5) {
+              enemies.push({type:'moblin', subType:'forest', x: e.x, y: e.y, hp:2, mhp:2, spd:0.9, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
+          }
+      }
+      else if(e.subType === 'fire') {
+          if(e.tm%150===0){ e.x = 4*TILE + Math.random()*16*TILE; e.y = 2*TILE + Math.random()*8*TILE; }
+          // Rapid fire spiral
+          if(e.tm%20===0 && (e.tm%150) > 50) {
+              let ang = (e.tm * 0.1) % (Math.PI*2);
+              projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:10,h:10,dx:Math.cos(ang)*3.0,dy:Math.sin(ang)*3.0,life:150});
+          }
+      }
+      else if(e.subType === 'final') {
+          if(e.tm%240===0){ e.x = 4*TILE + Math.random()*16*TILE; e.y = 2*TILE + Math.random()*8*TILE; }
+          // Hell mode: Huge ring of fire + Rapid aimed shots
+          if(e.tm%120===0) {
+              let count = 8;
+              for(let k=0;k<count;k++){ 
+                  const ang=(Math.PI*2/count)*k; 
+                  projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:10,h:10,dx:Math.cos(ang)*2.0,dy:Math.sin(ang)*2.0,life:150}); 
+              }
+          }
+          if(e.tm%120===60) {
+              // Fast aimed cluster
+              for(let k=-2; k<=2; k++) {
+                  let ang = angleToPlayer + k*0.15;
+                  projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:10,h:10,dx:Math.cos(ang)*4.0,dy:Math.sin(ang)*4.0,life:150});
+              }
           }
       }
     }
@@ -1014,8 +1103,11 @@ function init3D() {
     const pixelRatio = Math.max(1, window.devicePixelRatio ? Math.min(window.devicePixelRatio, 1.5) : 1);
     renderer.setPixelRatio(pixelRatio); 
     renderer.setSize(w, h);
+    
+    // Performance optimization: Lower shadow resolution to compensate for massive map chunks
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap; 
+    
     document.getElementById('game-container').appendChild(renderer.domElement);
 
     hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6); 
@@ -1027,7 +1119,8 @@ function init3D() {
     dirLight.shadow.camera.left = -400; dirLight.shadow.camera.right = 400;
     dirLight.shadow.camera.top = 400; dirLight.shadow.camera.bottom = -400;
     dirLight.shadow.camera.far = 1500;
-    dirLight.shadow.mapSize.width = 1024; dirLight.shadow.mapSize.height = 1024;
+    dirLight.shadow.mapSize.width = 512; // optimized shadow map size
+    dirLight.shadow.mapSize.height = 512;
     scene.add(dirLight);
     scene.add(dirLight.target);
 
@@ -1044,26 +1137,27 @@ function init3D() {
     const texDungeon = createNoiseTexture('#1a1a1a', '#222222', 'rock');
     if(texDungeon) texDungeon.repeat.set(COLS/2, ROWS/2);
 
-    Mat.grassBase = new THREE.MeshStandardMaterial({ map: texGrass, color: texGrass ? 0xffffff : 0x4d8c31, roughness: 1.0 });
-    Mat.wall = new THREE.MeshStandardMaterial({ color: 0x7a6c5d, roughness: 0.9 });
-    Mat.wood = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.8 });
-    Mat.leaves = new THREE.MeshStandardMaterial({ color: 0x3a7022, roughness: 0.9 });
+    // Performance Update: All materials changed from expensive MeshStandardMaterial to MeshLambertMaterial
+    Mat.grassBase = new THREE.MeshLambertMaterial({ map: texGrass, color: texGrass ? 0xffffff : 0x4d8c31 });
+    Mat.wall = new THREE.MeshLambertMaterial({ color: 0x7a6c5d });
+    Mat.wood = new THREE.MeshLambertMaterial({ color: 0x5c4033 });
+    Mat.leaves = new THREE.MeshLambertMaterial({ color: 0x3a7022 });
     
     // Dynamic mats
-    Mat.floorGen = new THREE.MeshStandardMaterial({ map: texDungeon, color: texDungeon ? 0xffffff : 0x1a1a1a, roughness: 0.7 });
-    Mat.wallGen = new THREE.MeshStandardMaterial({ color: 0x2a3b4c, roughness: 0.6 });
+    Mat.floorGen = new THREE.MeshLambertMaterial({ map: texDungeon, color: texDungeon ? 0xffffff : 0x1a1a1a });
+    Mat.wallGen = new THREE.MeshLambertMaterial({ color: 0x2a3b4c });
     
-    Mat.gold = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3, metalness: 0.8 });
-    Mat.tunic = new THREE.MeshStandardMaterial({ color: 0x1d8a1d, roughness: 0.8 });
-    Mat.skin = new THREE.MeshStandardMaterial({ color: 0xf5d0a9, roughness: 0.7 });
-    Mat.brown = new THREE.MeshStandardMaterial({ color: 0x523015, roughness: 0.9 });
-    Mat.sword = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.9, roughness: 0.2 });
+    Mat.gold = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+    Mat.tunic = new THREE.MeshLambertMaterial({ color: 0x1d8a1d });
+    Mat.skin = new THREE.MeshLambertMaterial({ color: 0xf5d0a9 });
+    Mat.brown = new THREE.MeshLambertMaterial({ color: 0x523015 });
+    Mat.sword = new THREE.MeshLambertMaterial({ color: 0xdddddd });
     Mat.fire = new THREE.MeshBasicMaterial({ color: 0xff5500, transparent: true, opacity: 0.8 });
     Mat.particle = new THREE.MeshBasicMaterial({ color: 0xffdd55 });
-    Mat.black = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+    Mat.black = new THREE.MeshLambertMaterial({ color: 0x222222 });
     Mat.pitchBlack = new THREE.MeshBasicMaterial({ color: 0x000000 }); // For doorways
-    Mat.bombDark = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.5 });
-    Mat.arcade = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
+    Mat.bombDark = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    Mat.arcade = new THREE.MeshLambertMaterial({ color: 0x333333 });
     Mat.screen = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
     
     scene.add(staticMapGroup);
@@ -1079,7 +1173,6 @@ function buildStaticMap3D(mapId) {
     
     let floorMat = Mat.grassBase;
     
-    // Completely rehauled lighting logic - significantly brighter!
     if (theme === 'spawn') {
         scene.background.setHex(0x1a2b4c); scene.fog.color.setHex(0x1a2b4c);
         scene.fog.near = 100; scene.fog.far = 400; 
@@ -1099,10 +1192,11 @@ function buildStaticMap3D(mapId) {
         Mat.floorGen.color.setHex(0x442222); Mat.wallGen.color.setHex(0x552222);
         floorMat = Mat.floorGen;
     } else if (theme === 'final') {
+        // Brightened the final boss room background and lights
         scene.background.setHex(0x2a103a); scene.fog.color.setHex(0x2a103a);
-        scene.fog.near = 80; scene.fog.far = 350;
-        hemiLight.intensity = 0.4; dirLight.intensity = 0.5;
-        Mat.floorGen.color.setHex(0x110022); Mat.wallGen.color.setHex(0x1a1a1a);
+        scene.fog.near = 100; scene.fog.far = 400;
+        hemiLight.intensity = 0.6; dirLight.intensity = 0.6;
+        Mat.floorGen.color.setHex(0x331144); Mat.wallGen.color.setHex(0x221133);
         floorMat = Mat.floorGen;
     } else { // overworld
         scene.background.setHex(0x87ceeb); scene.fog.color.setHex(0x87ceeb);
@@ -1231,8 +1325,8 @@ function buildPlayer3D() {
 function buildEnemy3D(subType) {
     const g = new THREE.Group();
     let col = Mat.enemyOrg;
-    if(subType === 'forest') col = new THREE.MeshStandardMaterial({ color: 0x33aa33, roughness: 0.7 });
-    if(subType === 'fire') col = new THREE.MeshStandardMaterial({ color: 0xaa3333, roughness: 0.7 });
+    if(subType === 'forest') col = new THREE.MeshLambertMaterial({ color: 0x33aa33 });
+    if(subType === 'fire') col = new THREE.MeshLambertMaterial({ color: 0xaa3333 });
 
     const body = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 10, 8), col); body.position.y = 8; body.castShadow=true;
     const head = new THREE.Mesh(new THREE.BoxGeometry(8, 8, 8), col); head.position.y = 17; head.castShadow=true;
@@ -1249,9 +1343,9 @@ function buildBoss3D(subType) {
     let scale = 1.0;
     let col = Mat.enemyBoss;
     
-    if(subType === 'forest') { col = new THREE.MeshStandardMaterial({ color: 0x225522, roughness: 0.9 }); }
-    if(subType === 'fire') { col = new THREE.MeshStandardMaterial({ color: 0x881111, roughness: 0.5 }); }
-    if(subType === 'final') { col = new THREE.MeshStandardMaterial({ color: 0x220033, roughness: 0.2 }); scale = 2.0; }
+    if(subType === 'forest') { col = new THREE.MeshLambertMaterial({ color: 0x225522 }); }
+    if(subType === 'fire') { col = new THREE.MeshLambertMaterial({ color: 0x881111 }); }
+    if(subType === 'final') { col = new THREE.MeshLambertMaterial({ color: 0x220033 }); scale = 2.0; }
 
     const body = new THREE.Mesh(new THREE.DodecahedronGeometry(18, 1), col); body.position.y = 20; body.castShadow=true;
     const head = new THREE.Mesh(new THREE.BoxGeometry(16, 16, 16), Mat.black); head.position.set(0, 40, 5); head.castShadow=true;
@@ -1474,6 +1568,8 @@ const timeStep = 1000 / 60;
 
 function gameLoop(currentTime) {
     requestAnimationFrame(gameLoop);
+    
+    updateGamepad(); // Poll controller hardware constantly
     
     let now = currentTime || performance.now();
     if (!lastTime) lastTime = now;
