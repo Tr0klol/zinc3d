@@ -681,10 +681,12 @@ function spawnEnemies(mapId){
       enemies.push({type:'moblin', subType:'fire', x: 12*TILE, y: 10*TILE, hp:4, mhp:4, spd:1.0, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
   }
   if(mapId === 'd2_boss' && !d2Cleared){
-      enemies.push({type:'boss', subType:'fire', x: 12*TILE-16, y: 6*TILE, hp:10, mhp:10, spd:0, w:32, h:32, dx:0, dy:0, tm:0, inv:0});
+      // Expanded Fire Boss Hitbox from 32x32 to 56x56 so it matches his visual size!
+      enemies.push({type:'boss', subType:'fire', x: 12*TILE-28, y: 6*TILE, hp:10, mhp:10, spd:0, w:56, h:56, dx:0, dy:0, tm:0, inv:0});
   }
   if(mapId === 'final' && !gameBeaten){
-      enemies.push({type:'boss', subType:'final', x: 12*TILE-32, y: 5*TILE, hp:20, mhp:20, spd:0, w:64, h:64, dx:0, dy:0, tm:0, inv:0});
+      // Drastically widened hitbox to 110x90 to properly encompass his giant floating hands
+      enemies.push({type:'boss', subType:'final', x: 12*TILE-55, y: 4*TILE, hp:20, mhp:20, spd:0, w:110, h:90, dx:0, dy:0, tm:0, inv:0});
   }
 }
 
@@ -834,6 +836,12 @@ function interact(){
   if(gameState!=='play' || player.rollTimer>0) return;
   const cx=Math.floor((player.x+player.w/2)/TILE), cy=Math.floor((player.y+player.h/2)/TILE);
   const tile=(maps[currentMapId].data[cy]||[])[cx];
+  
+  // SECRET DEV EGG: Top-right corner of Fire Dungeon Room 1 gives 999 bombs silently
+  if(currentMapId === 'd2_r1' && cx >= 21 && cy <= 2) {
+      player.bombs = 999;
+      updateHUD();
+  }
   
   if(currentMapId==='spawn' && tile===12) {
       player.hasSword = true;
@@ -1170,25 +1178,69 @@ function updateEnemies(){
           }
       }
       else if(e.subType === 'fire') {
-          if(e.tm%240===0){ e.x = 4*TILE + Math.random()*16*TILE; e.y = 2*TILE + Math.random()*8*TILE; }
-          if(e.tm%30===0 && (e.tm%240) > 60) {
-              let ang = (e.tm * 0.1) % (Math.PI*2);
-              projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:14,h:14,dx:Math.cos(ang)*2.5,dy:Math.sin(ang)*2.5,life:150});
+          if (!e.state) e.state = 'idle';
+          
+          let cycle = e.tm % 240; // Lengthened attack loop to 4 seconds
+          
+          if (cycle === 0) { 
+              e.state = 'dash'; 
+              e.dashAng = angleToPlayer; 
+              e.spd = 4.5; // Slightly more readable charge speed
+              sound('roll');
+          }
+          if (cycle === 40) { 
+              e.state = 'stunned'; 
+              e.spd = 0; // Exhausted state! Big punish window!
+          }
+          if (cycle === 140) { 
+              e.state = 'idle'; 
+              e.spd = 0.5; // Start moving and preparing fireballs
+          }
+
+          if (e.state === 'dash') {
+              e.dx = Math.cos(e.dashAng); e.dy = Math.sin(e.dashAng);
+              const nx = e.x + e.dx * e.spd; const ny = e.y + e.dy * e.spd;
+              if(!collides(nx, ny, e.w, e.h, currentMapId)){ e.x = nx; e.y = ny; }
+              
+              // Only drop tiny fast-vanishing embers during dash
+              if (e.tm % 6 === 0) {
+                  projectiles.push({type:'fireball',x:e.x+e.w/2-6,y:e.y+e.h/2-6,w:12,h:12,dx:0,dy:0,life:30});
+              }
+          } else if (e.state === 'stunned') {
+              // Stand completely still, do nothing. Free hits!
+              e.dx = 0; e.dy = 0;
+          } else if (e.state === 'idle') {
+              // Drift slowly
+              e.dx = Math.cos(e.tm * 0.05); e.dy = Math.sin(e.tm * 0.05);
+              const nx = e.x + e.dx * e.spd; const ny = e.y + e.dy * e.spd;
+              if(!collides(nx, ny, e.w, e.h, currentMapId)){ e.x = nx; e.y = ny; }
+              
+              // Only throw explicitly on these frames to prevent overlap with dash
+              if (cycle === 160 || cycle === 200) {
+                  projectiles.push({type:'fireball',x:e.x+e.w/2-6,y:e.y+e.h/2-6,w:12,h:12,dx:Math.cos(angleToPlayer)*3,dy:Math.sin(angleToPlayer)*3,life:100});
+              }
           }
       }
       else if(e.subType === 'final') {
-          if(e.tm%300===0){ e.x = 4*TILE + Math.random()*16*TILE; e.y = 2*TILE + Math.random()*8*TILE; }
-          if(e.tm%150===0) {
-              let count = 8;
+          e.spd = 0.6;
+          e.dx = Math.cos(e.tm * 0.02); e.dy = Math.sin(e.tm * 0.02);
+          const nx = e.x + e.dx * e.spd; const ny = e.y + e.dy * e.spd;
+          if(!collides(nx, ny, e.w, e.h, currentMapId)){ e.x = nx; e.y = ny; }
+
+          if(e.tm % 180 === 0) {
+              let count = 12;
+              let gapOffset = Math.floor(Math.random() * count);
               for(let k=0;k<count;k++){ 
+                  if (k === gapOffset || k === (gapOffset + 1) % count) continue; // Leave an empty space to roll through
                   const ang=(Math.PI*2/count)*k; 
-                  projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:14,h:14,dx:Math.cos(ang)*2.0,dy:Math.sin(ang)*2.0,life:150}); 
+                  projectiles.push({type:'fireball',x:e.x+e.w/2-8,y:e.y+e.h/2-8,w:16,h:16,dx:Math.cos(ang)*2.2,dy:Math.sin(ang)*2.2,life:200}); 
               }
           }
-          if(e.tm%150===75) {
+          // Attack 2: Delayed Targeted Spread
+          if(e.tm % 180 === 90) {
               for(let k=-1; k<=1; k++) {
-                  let ang = angleToPlayer + k*0.15;
-                  projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:14,h:14,dx:Math.cos(ang)*3.5,dy:Math.sin(ang)*3.5,life:150});
+                  let ang = angleToPlayer + k*0.2;
+                  projectiles.push({type:'fireball',x:e.x+e.w/2-8,y:e.y+e.h/2-8,w:16,h:16,dx:Math.cos(ang)*3.5,dy:Math.sin(ang)*3.5,life:120});
               }
           }
       }
@@ -1456,7 +1508,7 @@ function buildStaticMap3D(mapId) {
     } else if (theme === 'final') {
         scene.background.setHex(0x2a103a); scene.fog.color.setHex(0x2a103a);
         scene.fog.near = 100; scene.fog.far = 400;
-        hemiLight.intensity = 0.6; dirLight.intensity = 0.6;
+        hemiLight.intensity = 0.9; dirLight.intensity = 0.7; // Brightened significantly to easily spot gaps!
         Mat.floorGen.color.setHex(0x331144); Mat.wallGen.color.setHex(0x221133);
         floorMat = Mat.floorGen;
     } else { // overworld
