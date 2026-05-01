@@ -14,9 +14,15 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
 
 #ui-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 
+#hud-timer { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); font-size: 24px; color: #fff; text-shadow: 3px 3px 0 #000; letter-spacing: 2px; z-index: 10; font-weight: bold; }
+
 #hud-hearts { position: absolute; top: 30px; left: 30px; color: #ff4444; font-size: 24px; text-shadow: 3px 3px 0 #000; pointer-events: none; z-index: 10; letter-spacing: 2px; }
 #hud-bombs { position: absolute; top: 70px; left: 30px; color: #fff; font-size: 20px; text-shadow: 3px 3px 0 #000; pointer-events: none; z-index: 10; }
+#hud-rupees { position: absolute; top: 110px; left: 30px; color: #44ff44; font-size: 20px; text-shadow: 3px 3px 0 #000; pointer-events: none; z-index: 10; }
 #hud-triforce { position: absolute; top: 30px; right: 30px; color: #44eeff; font-size: 20px; text-shadow: 3px 3px 0 #000; pointer-events: none; display: none; z-index: 10; }
+
+#stamina-wheel { position: absolute; top: calc(50% - 20px); left: calc(50% + 40px); width: 40px; height: 40px; border-radius: 50%; background: conic-gradient(#00ff00 100%, rgba(0,0,0,0.5) 0); box-shadow: 0 0 10px rgba(0,0,0,0.8); z-index: 10; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+#stamina-inner { position: absolute; inset: 6px; background: rgba(0,0,0,0.85); border-radius: 50%; }
 
 #msg-container { position: absolute; bottom: 80px; width: 100%; text-align: center; pointer-events: none; z-index: 15; }
 #msg { padding: 16px 30px; background: #000; border: 4px solid #fff; font-size: 14px; color: #fff; display: inline-block; box-shadow: 6px 6px 0 #000; transition: opacity 0.3s; text-shadow: 2px 2px 0 #444; line-height: 1.5; }
@@ -48,16 +54,42 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
 #btn-roll { bottom: 135px; right: 25px; width: 65px; height: 65px; font-size: 10px; text-align: center; }
 #btn-interact { bottom: 220px; right: 65px; width: 65px; height: 65px; font-size: 10px; text-align: center; }
 
-/* Arcade UI */
+/* Arcade & Shop UI */
 #pong-ui { display: none; position: absolute; inset: 0; z-index: 30; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; backdrop-filter: blur(8px); }
 #pong-ui h2 { color: #00ffcc; text-shadow: 4px 4px 0 #0088aa; margin-bottom: 30px; font-size: 32px; letter-spacing: 2px; }
 #pong-canvas { border: 4px solid #fff; box-shadow: 0 0 20px rgba(0, 255, 204, 0.4); background: #050505; max-width: 90%; }
-#exit-pong-btn { background: #000; border: 4px solid #ff4444; color: #ff4444; box-shadow: 4px 4px 0 #550000; margin-top: 30px; padding: 12px 24px; cursor: pointer; transition: transform 0.1s; }
+#exit-pong-btn { background: #000; border: 4px solid #ff4444; color: #ff4444; box-shadow: 4px 4px 0 #550000; margin-top: 30px; padding: 12px 24px; cursor: pointer; transition: transform 0.1s; font-family: 'Press Start 2P', monospace; }
 #exit-pong-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #550000; }
+
+#shop-ui { display: none; position: absolute; inset: 0; z-index: 35; background: rgba(0,0,0,0.8); flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; backdrop-filter: blur(4px); }
+#shop-panel { background: #1a1a1a; border: 6px solid #d4af37; border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5); text-align: center; }
+#shop-panel h2 { color: #d4af37; text-shadow: 3px 3px 0 #000; margin-bottom: 20px; font-size: 28px; }
+#beedle-msg { font-size: 14px; color: #fff; line-height: 1.6; margin-bottom: 30px; background: #000; padding: 15px; border: 2px solid #555; text-shadow: 2px 2px 0 #000; min-height: 60px; }
+.shop-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 15px; margin-bottom: 15px; border: 2px solid #444; transition: transform 0.1s, border-color 0.1s; }
+.shop-item:hover { border-color: #d4af37; transform: scale(1.02); }
+.shop-item-info { text-align: left; }
+.shop-item-name { font-size: 16px; color: #fff; margin-bottom: 8px; text-shadow: 2px 2px 0 #000; }
+.shop-item-desc { font-size: 10px; color: #aaa; }
+.shop-buy-btn { background: #d4af37; color: #000; border: 3px solid #fff; padding: 10px 15px; font-family: 'Press Start 2P', monospace; font-size: 12px; cursor: pointer; box-shadow: 4px 4px 0 #000; transition: transform 0.1s; }
+.shop-buy-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+#shop-close-btn { background: #550000; color: #fff; border: 3px solid #ff4444; padding: 15px 30px; margin-top: 15px; font-family: 'Press Start 2P', monospace; font-size: 14px; cursor: pointer; box-shadow: 4px 4px 0 #000; transition: transform 0.1s; }
+#shop-close-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+
+#leaderboard-ui { display: none; position: absolute; inset: 0; z-index: 35; background: rgba(0,0,0,0.8); flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; backdrop-filter: blur(4px); }
+.lb-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #555; padding: 12px 0; color: #fff; font-size: 14px; text-shadow: 2px 2px 0 #000; width: 100%; }
+
+#win-ui { display: none; position: absolute; inset: 0; z-index: 50; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; backdrop-filter: blur(8px); }
+#win-ui h1 { font-size: 48px; color: #ffd700; text-shadow: 0 0 20px #ffaa00; margin-bottom: 20px; text-align: center; }
+#win-ui p { font-size: 24px; color: #fff; margin-bottom: 30px; text-shadow: 2px 2px 0 #000; }
+#submit-score-box { display: flex; gap: 10px; margin-bottom: 30px; }
+#submit-score-box input { background: #000; color: #fff; border: 4px solid #fff; padding: 10px; font-size: 24px; width: 180px; text-align: center; font-family: 'Press Start 2P', monospace; text-transform: uppercase; }
+#submit-score-box button { background: #44ff44; color: #000; border: 4px solid #fff; padding: 10px 20px; font-size: 20px; cursor: pointer; font-family: 'Press Start 2P', monospace; transition: transform 0.1s; }
+#submit-score-box button:active { transform: scale(0.95); }
 
 @media (max-width: 768px) { 
     #hud-hearts { font-size: 16px; top: 20px; left: 20px; text-shadow: 2px 2px 0 #000; }
     #hud-bombs { font-size: 14px; top: 50px; left: 20px; text-shadow: 2px 2px 0 #000; }
+    #hud-rupees { font-size: 14px; top: 80px; left: 20px; text-shadow: 2px 2px 0 #000; }
     #hud-triforce { font-size: 14px; top: 20px; right: 20px; text-shadow: 2px 2px 0 #000; }
     #crosshair { display: none !important; } 
     #mobile-ui { display: block; }
@@ -79,11 +111,15 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
 <div id="crosshair"></div>
 
 <div id="ui-layer">
+    <div id="hud-timer">00:00.00</div>
     <div id="hud-hearts">♥♥♥</div>
     <div id="hud-bombs">💣 <span id="hb">3</span></div>
+    <div id="hud-rupees">♦ <span id="hr">0</span></div>
     <div id="hud-triforce">▲ <span id="htf">0/2</span></div>
     <div id="msg-container"><div id="msg" style="opacity:0;"></div></div>
 </div>
+
+<div id="stamina-wheel"><div id="stamina-inner"></div></div>
 
 <div id="interaction-hint"></div>
 
@@ -105,6 +141,49 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
     <div id="exit-pong-btn">EXIT ARCADE</div>
 </div>
 
+<div id="shop-ui">
+    <div id="shop-panel">
+        <h2>BEEDLE'S SHOP</h2>
+        <div id="beedle-msg">"Oooooh! Welcome to my shop! See anything you like?"</div>
+        
+        <div class="shop-item">
+            <div class="shop-item-info">
+                <div class="shop-item-name">Heart Container</div>
+                <div class="shop-item-desc">Permanently increases max health.</div>
+            </div>
+            <button class="shop-buy-btn" onclick="buyItem('heart')">20 ♦</button>
+        </div>
+        
+        <div class="shop-item">
+            <div class="shop-item-info">
+                <div class="shop-item-name">Bomb Bundle</div>
+                <div class="shop-item-desc">A satchel containing 5 bombs.</div>
+            </div>
+            <button class="shop-buy-btn" onclick="buyItem('bomb')">10 ♦</button>
+        </div>
+        
+        <button id="shop-close-btn" onclick="exitShop()">LEAVE SHOP</button>
+    </div>
+</div>
+
+<div id="leaderboard-ui">
+    <div id="shop-panel">
+        <h2>HALL OF FAME</h2>
+        <div id="lb-list" style="margin-bottom: 20px; max-height: 250px; overflow-y: auto;">Loading...</div>
+        <button id="shop-close-btn" onclick="closeLeaderboard()">CLOSE</button>
+    </div>
+</div>
+
+<div id="win-ui">
+    <h1>YOU WON!</h1>
+    <p id="win-time-text">Time: 00:00.00</p>
+    <div id="submit-score-box">
+        <input type="text" id="sr-name" maxlength="5" placeholder="NAME">
+        <button onclick="submitSpeedrun()">SUBMIT</button>
+    </div>
+    <div class="go" onclick="document.getElementById('win-ui').style.display='none'; resetGame();">PLAY AGAIN</div>
+</div>
+
 <div id="ov">
     <h1>LEGEND OF ZINC 3D</h1>
     <p class="pc-only"><b>Mouse</b> - Look Around (Pointer Lock) · <b>WASD</b> - Move</p>
@@ -120,6 +199,96 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
 </div>
 
 <script>
+// --- FIREBASE CLOUD SAVES & SPEEDRUN LOGIC ---
+let db, auth, currentUser = null;
+let leaderboardData = [];
+let appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+let speedrunTime = 0, speedrunActive = false, speedrunStartTime = 0;
+
+window.dbCollection = null; window.dbAddDoc = null; window.dbOnSnapshot = null;
+
+async function initFirebase() {
+    if (typeof __firebase_config === 'undefined') return;
+    try {
+        const config = JSON.parse(__firebase_config);
+        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
+        const { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js');
+        const { getFirestore, collection, addDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+
+        const app = initializeApp(config);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        window.dbCollection = collection; window.dbAddDoc = addDoc; window.dbOnSnapshot = onSnapshot;
+
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+        else await signInAnonymously(auth);
+
+        onAuthStateChanged(auth, user => { currentUser = user; if (user) fetchLeaderboard(); });
+    } catch(e) { console.error("Firebase disabled/failed.", e); }
+}
+initFirebase();
+
+function fetchLeaderboard() {
+    if (!window.dbCollection || !currentUser) return;
+    const colRef = window.dbCollection(db, 'artifacts', appId, 'public', 'data', 'speedruns');
+    window.dbOnSnapshot(colRef, (snapshot) => {
+        let runs = [];
+        snapshot.forEach(doc => runs.push(doc.data()));
+        runs.sort((a,b) => a.time - b.time);
+        leaderboardData = runs.slice(0, 10);
+        renderLeaderboard();
+    }, (error) => console.error(error));
+}
+
+function formatTime(ms) {
+    let totalSec = Math.floor(ms / 1000);
+    let mins = Math.floor(totalSec / 60);
+    let secs = totalSec % 60;
+    let millis = Math.floor((ms % 1000) / 10); 
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${millis.toString().padStart(2, '0')}`;
+}
+
+function renderLeaderboard() {
+    const list = document.getElementById('lb-list');
+    if (leaderboardData.length === 0) {
+        list.innerHTML = "<p style='color:#ccc; font-size:12px;'>No times recorded yet.</p>"; return;
+    }
+    let html = "";
+    leaderboardData.forEach((run, i) => { html += `<div class="lb-row"><span>${i+1}. ${run.name}</span> <span>${formatTime(run.time)}</span></div>`; });
+    list.innerHTML = html;
+}
+
+function showLeaderboard() {
+    gameState = 'menu';
+    document.getElementById('mobile-ui').style.display = 'none';
+    document.getElementById('leaderboard-ui').style.display = 'flex';
+    try { document.exitPointerLock(); } catch(e){}
+}
+
+function closeLeaderboard() {
+    gameState = 'play';
+    if(window.innerWidth <= 768) document.getElementById('mobile-ui').style.display = 'block';
+    document.getElementById('leaderboard-ui').style.display = 'none';
+    keys.e = false; keys._e = true; lastMouseTime = Date.now();
+    try { if(window.innerWidth > 768) document.body.requestPointerLock(); } catch(e){}
+}
+
+async function submitSpeedrun() {
+    const nameInput = document.getElementById('sr-name').value.trim().toUpperCase();
+    if (!nameInput) return;
+    if (!window.dbAddDoc || !currentUser) {
+        showMessage("Online saves unavailable!"); document.getElementById('submit-score-box').style.display = 'none'; return;
+    }
+    document.getElementById('submit-score-box').style.display = 'none';
+    showMessage("Submitting score...");
+    const colRef = window.dbCollection(db, 'artifacts', appId, 'public', 'data', 'speedruns');
+    try {
+        await window.dbAddDoc(colRef, { name: nameInput.substring(0, 5), time: speedrunTime, timestamp: Date.now(), uid: currentUser.uid });
+        showMessage("Score submitted!");
+    } catch(e) { showMessage("Error submitting score."); }
+}
+
 // --- CORE GAME STATE & CONSTANTS ---
 const msgText = document.getElementById('msg');
 const bombEl = document.getElementById('hb');
@@ -128,7 +297,7 @@ const hintEl = document.getElementById('interaction-hint');
 const crosshairEl = document.getElementById('crosshair');
 
 const TILE = 32, COLS = 24, ROWS = 16, WIDTH = COLS*TILE, HEIGHT = ROWS*TILE;
-let gameState = 'title'; // 'title', 'play', 'pong', 'gameover', 'win'
+let gameState = 'title'; // 'title', 'play', 'pong', 'gameover', 'win', 'menu', 'shop'
 let frame = 0;
 let keys = {};
 let lastMouseTime = 0;
@@ -172,16 +341,19 @@ function makeSmallMap(w, h) {
 const spawnRoom = makeSmallMap(10, 10);
 spawnRoom[7][11] = 12; // Pedestal with Sword
 spawnRoom[3][11] = 15; spawnRoom[3][12] = 15; // Exit Archway North -> Overworld
+spawnRoom[8][7] = 17; // LEADERBOARD PLAQUE on the left wall
 
 // 2. Overworld (Zincolia)
 const overworldMap = makeBorderedMap();
 overworldMap[ROWS-1][11] = 14; overworldMap[ROWS-1][12] = 14; // Awakening Entrance (solid)
+overworldMap[12][8] = 16; // Beedle NPC / Merchant
 for(let i=0; i<40; i++) {
     let tx = 1 + Math.floor(Math.random()*(COLS-2));
     let ty = 1 + Math.floor(Math.random()*(ROWS-2));
     if(tx > 9 && tx < 14) continue; 
     if(ty > 6 && ty < 10) continue;
     if(tx >= 3 && tx <= 5 && ty >= 12 && ty <= 14) continue; // Arcade space
+    if(tx >= 7 && tx <= 9 && ty >= 11 && ty <= 13) continue; // Merchant space
     if(overworldMap[ty][tx] === 0) overworldMap[ty][tx] = 4;
 }
 overworldMap[7][0] = 15; overworldMap[8][0] = 15; // Archway West -> D1
@@ -228,14 +400,14 @@ let gameBeaten = false;
 
 let player = {
     x: 0, y: 0, w: 14, h: 14, 
-    visualAngle: 0, hp: 6, maxHp: 6, triforce: 0, bombs: 3, hasSword: false,
-    speed: 1.4, sprintSpeed: 2.8, 
+    visualAngle: 0, hp: 6, maxHp: 6, triforce: 0, bombs: 3, rupees: 0, hasSword: false,
+    speed: 1.4, sprintSpeed: 2.8, stamina: 100,
     inv: 0, moving: false, sprinting: false,
     swordCharge: 0, isSpinning: 0, rollTimer: 0, rollDx: 0, rollDy: 0, rollCooldown: 0
 };
 
 let fairy = { x: 0, y: 0, z: 20 };
-let pong = { x: 300, y: 200, dx: 5, dy: 5, p1y: 160, p2y: 160, p1s: 0, p2s: 0, w: 600, h: 400, beaten: false };
+let pong = { x: 300, y: 200, dx: 5, dy: 5, p1y: 160, p2y: 160, p1s: 0, p2s: 0, w: 600, h: 400, beaten: false, delay: 0 };
 
 let enemies=[], projectiles=[], drops=[], particles=[], bombsList=[], explosions=[];
 let sword=null;
@@ -316,6 +488,7 @@ let gpDX = 0, gpDY = 0;
 
 const joyBaseEl = document.getElementById('joystick-base');
 const joyStickEl = document.getElementById('joystick-stick');
+const beedleMsgText = document.getElementById('beedle-msg');
 
 document.getElementById('touch-move-zone').addEventListener('touchstart', e => {
     e.preventDefault(); const touch = e.changedTouches[0];
@@ -423,6 +596,8 @@ function updateGamepad() {
 
     if(gp.buttons[1]?.pressed && !keys._gp_e) {
         if (gameState === 'pong') exitPong();
+        else if (gameState === 'shop') exitShop();
+        else if (gameState === 'menu') closeLeaderboard();
         else interact(); 
         keys._gp_e = true;
     } else if (!gp.buttons[1]?.pressed) {
@@ -459,6 +634,7 @@ function updateHUD(){
   const hearts=[]; for(let i=0;i<player.maxHp;i+=2){ hearts.push(player.hp>=i+2 ? '♥' : player.hp===i+1 ? '♡' : '♡'); }
   document.getElementById('hud-hearts').innerText = hearts.join(''); 
   bombEl.innerText = player.bombs;
+  document.getElementById('hr').innerText = player.rupees;
   triEl.innerText = `${player.triforce}/2`;
   
   document.getElementById('hud-triforce').style.display = 'block'; 
@@ -470,7 +646,7 @@ function updateHUD(){
 }
 
 function isSolid(tile, mapId){
-    if(tile === 1 || tile === 2 || tile === 4 || tile === 6 || tile === 13 || tile === 14 || tile === 15) return true;
+    if(tile === 1 || tile === 2 || tile === 4 || tile === 6 || tile === 13 || tile === 14 || tile === 15 || tile === 16 || tile === 17) return true;
     return false;
 }
 
@@ -520,7 +696,10 @@ function resetGame(){
   overworldMap[0][11] = 13; overworldMap[0][12] = 13; 
   spawnRoom[7][11] = 12; 
   
-  player.x=11.5*TILE; player.y=8*TILE; player.hp=6; player.triforce=0; player.bombs=3; player.hasSword=false;
+  speedrunActive = false; speedrunTime = 0;
+  document.getElementById('hud-timer').innerText = "00:00.00";
+  
+  player.x=11.5*TILE; player.y=8*TILE; player.hp=6; player.maxHp=6; player.triforce=0; player.bombs=3; player.rupees=0; player.stamina=100; player.hasSword=false;
   player.inv=0; player.moving = false; player.sprinting = false;
   player.swordCharge = 0; player.isSpinning = 0; player.rollTimer = 0;
   player.rollDx = 0; player.rollDy = 0; player.rollCooldown = 0;
@@ -592,11 +771,13 @@ function hitEnemy(idx,dmg,knockX,knockY){
     if(e.type==='boss'){ 
         if (currentMapId === 'final') {
             gameBeaten = true;
+            speedrunActive = false; // STOP SPEEDRUN TIMER!
             sound('win'); gameState='win'; 
             try { document.exitPointerLock(); } catch(e){}
-            document.getElementById('ov').style.display='flex'; 
-            document.querySelector('#ov h1').innerText='YOU WON!'; 
-            document.querySelector('#ov p').innerText='Gargantua has been vanquished. Peace returns to Zincolia.'; 
+            document.getElementById('win-ui').style.display='flex'; 
+            document.getElementById('win-time-text').innerText = 'Time: ' + formatTime(speedrunTime);
+            document.getElementById('submit-score-box').style.display = 'flex';
+            document.getElementById('sr-name').value = '';
         } else {
             drops.push({x:e.x+e.w/2,y:e.y+e.h/2,type:'triforce',val:0,life:9999}); 
             showMessage('Boss Defeated! Claim the Zinc Fragment!'); 
@@ -604,7 +785,9 @@ function hitEnemy(idx,dmg,knockX,knockY){
             if(currentMapId === 'd2_boss') d2Cleared = true;
         }
     } else {
-        if(Math.random()<0.4) drops.push({x:e.x,y:e.y,type:'heart',life:480});
+        let r = Math.random();
+        if(r < 0.3) drops.push({x:e.x,y:e.y,type:'heart',life:480});
+        else if(r < 0.7) drops.push({x:e.x,y:e.y,type:'rupee',life:480});
     }
     enemies.splice(idx,1); 
     
@@ -657,16 +840,72 @@ function interact(){
       spawnRoom[7][11] = 0; 
       sound('pick');
       showMessage("You claimed the Zinc Blade! A hero is born.");
+      
+      speedrunStartTime = Date.now(); // START SPEEDRUN TIMER!
+      speedrunActive = true;
+      
       updateHUD(); refresh3DMap();
   }
+  else if(currentMapId==='spawn' && Math.hypot((player.x+player.w/2)-240, (player.y+player.h/2)-272) < 60) {
+      showLeaderboard();
+  }
   else if(currentMapId==='overworld') {
-      if (Math.hypot((player.x+player.w/2)-144, (player.y+player.h/2)-430) < 45) { 
+      if (Math.hypot((player.x+player.w/2)-272, (player.y+player.h/2)-400) < 50) {
+          openShop();
+      }
+      if (Math.hypot((player.x+player.w/2)-144, (player.y+player.h/2)-432) < 60) { 
           startPong();
       }
-      if (cy <= 1 && cx >= 10 && cx <= 13 && tile===13) {
+      if (cy <= 2 && cx >= 10 && cx <= 13 && overworldMap[0][11] === 13) {
           showMessage("The Obsidian Gate requires 2 Zinc Fragments to open.");
       }
   }
+}
+
+// --- BEEDLE SHOP LOGIC ---
+function openShop() {
+    gameState = 'shop';
+    beedleMsgText.innerText = '"Oooooh! Welcome to my shop! See anything you like?"';
+    document.getElementById('mobile-ui').style.display = 'none';
+    document.getElementById('shop-ui').style.display = 'flex';
+    try { document.exitPointerLock(); } catch(e){}
+}
+
+function exitShop() {
+    gameState = 'play';
+    if(window.innerWidth <= 768) document.getElementById('mobile-ui').style.display = 'block';
+    document.getElementById('shop-ui').style.display = 'none';
+    keys.e = false; 
+    keys._e = true;
+    lastMouseTime = Date.now();
+    try { if(window.innerWidth > 768) document.body.requestPointerLock(); } catch(e){}
+}
+
+function buyItem(itemType) {
+    if (itemType === 'heart') {
+        if (player.rupees >= 20) {
+            player.rupees -= 20;
+            player.maxHp += 2;
+            player.hp = player.maxHp;
+            sound('pick');
+            beedleMsgText.innerText = '"THAAANK YOU! Your maximum health has increased!"';
+            updateHUD();
+        } else {
+            sound('block');
+            beedleMsgText.innerText = '"Oh no! You don\'t have enough Rupees for that!"';
+        }
+    } else if (itemType === 'bomb') {
+        if (player.rupees >= 10) {
+            player.rupees -= 10;
+            player.bombs += 5;
+            sound('pick');
+            beedleMsgText.innerText = '"THAAANK YOU! Stay safe out there with those!"';
+            updateHUD();
+        } else {
+            sound('block');
+            beedleMsgText.innerText = '"Oh no! You don\'t have enough Rupees for that!"';
+        }
+    }
 }
 
 // --- PONG MINIGAME LOGIC ---
@@ -676,6 +915,7 @@ function startPong() {
     pong.dx = 6; pong.dy = -6;
     pong.p1y = 160; pong.p2y = 160;
     pong.p1s = 0; pong.p2s = 0;
+    pong.delay = 60;
     
     document.getElementById('mobile-ui').style.display = 'none';
     document.getElementById('ui-layer').style.display = 'none';
@@ -708,6 +948,8 @@ function updatePong() {
     else if (gpDY !== 0) pong.p1y += gpDY * moveSpeed * 1.5;
     
     pong.p1y = Math.max(0, Math.min(pong.h - 80, pong.p1y));
+    
+    if (pong.delay > 0) { pong.delay--; return; } // Pause AI and ball temporarily
     
     let aiCenter = pong.p2y + 40;
     if (aiCenter < pong.y - 15) pong.p2y += 4.5;
@@ -752,6 +994,7 @@ function resetPongBall() {
     pong.y = pong.h/2; 
     pong.dx = (Math.random() > 0.5 ? 5 : -5);
     pong.dy = (Math.random() > 0.5 ? 4 : -4);
+    pong.delay = 60;
 }
 
 function drawPong() {
@@ -841,10 +1084,31 @@ function movePlayer(){
       dx = 0; dy = 0; 
   } else {
       if (player.rollCooldown > 0) player.rollCooldown--;
-      player.sprinting = keys.shift && iy < -0.2; 
+      
+      let sprintReq = keys.shift && mag > 0.1;
+      if (sprintReq && player.stamina > 0) {
+          player.sprinting = true;
+          player.stamina -= 1.0; 
+      } else {
+          player.sprinting = false;
+      }
+      
       let currentSpeed = player.sprinting ? player.sprintSpeed : player.speed;
       dx *= currentSpeed * mag;
       dy *= currentSpeed * mag;
+  }
+
+  if (!player.sprinting && player.rollTimer === 0 && player.stamina < 100) {
+      player.stamina += 0.5;
+  }
+  
+  const stWheel = document.getElementById('stamina-wheel');
+  if (player.stamina < 100) {
+      stWheel.style.opacity = '1';
+      let color = player.stamina < 25 ? '#ff4444' : '#00ff00';
+      stWheel.style.background = `conic-gradient(${color} ${player.stamina}%, rgba(0,0,0,0.5) 0)`;
+  } else {
+      stWheel.style.opacity = '0';
   }
 
   if(player.inv>0) player.inv--;
@@ -853,28 +1117,28 @@ function movePlayer(){
   if(!collides(nxp+2,player.y+2,player.w-4,player.h-4,currentMapId)) player.x=nxp;
   if(!collides(player.x+2,nyp+2,player.w-4,player.h-4,currentMapId)) player.y=nyp;
   
-  if(currentMapId==='spawn' && player.y < 4.0*TILE) {
+  if(currentMapId==='spawn' && player.y < 4.0*TILE && player.x > 10*TILE && player.x < 13*TILE) {
       loadMap('overworld', 11.5*TILE, 13.5*TILE, 0, 'Welcome to Zincolia.');
   }
   else if(currentMapId==='overworld') {
-      if (player.x < 1.0*TILE) loadMap('d1_r1', 21.5*TILE, 7.5*TILE, -Math.PI/2, 'The Overgrown Temple');
-      if (player.x > (COLS-2.0)*TILE) loadMap('d2_r1', 1.5*TILE, 7.5*TILE, Math.PI/2, 'The Scorched Depths');
+      if (player.x < 1.0*TILE && player.y > 6*TILE && player.y < 10*TILE) loadMap('d1_r1', 21.5*TILE, 7.5*TILE, -Math.PI/2, 'The Overgrown Temple');
+      if (player.x > (COLS-2.0)*TILE && player.y > 6*TILE && player.y < 10*TILE) loadMap('d2_r1', 1.5*TILE, 7.5*TILE, Math.PI/2, 'The Scorched Depths');
       if (player.y < 1.0*TILE && player.x > 10*TILE && player.x < 14*TILE && player.triforce >= 2) {
           loadMap('final', 11.5*TILE, 13.5*TILE, 0, "The Obsidian Gate. Defeat Gargantua.");
       }
   }
   else if(currentMapId==='d1_r1') {
-      if (player.x > (COLS-2.0)*TILE) loadMap('overworld', 1.5*TILE, 7.5*TILE, Math.PI/2, 'Returned to Zincolia.');
-      else if (player.y < 1.0*TILE) loadMap('d1_boss', 11.5*TILE, 13.5*TILE, 0, "Forest Boss Lair");
+      if (player.x > (COLS-2.0)*TILE && player.y > 6*TILE && player.y < 10*TILE) loadMap('overworld', 1.5*TILE, 7.5*TILE, Math.PI/2, 'Returned to Zincolia.');
+      else if (player.y < 1.0*TILE && player.x > 10*TILE && player.x < 14*TILE) loadMap('d1_boss', 11.5*TILE, 13.5*TILE, 0, "Forest Boss Lair");
   }
-  else if(currentMapId==='d1_boss' && player.y > (ROWS-2.0)*TILE) {
+  else if(currentMapId==='d1_boss' && player.y > (ROWS-2.0)*TILE && player.x > 10*TILE && player.x < 14*TILE) {
       loadMap('d1_r1', 11.5*TILE, 1.5*TILE, Math.PI, 'Returned to Temple.');
   }
   else if(currentMapId==='d2_r1') {
-      if (player.x < 1.0*TILE) loadMap('overworld', 21.5*TILE, 7.5*TILE, -Math.PI/2, 'Returned to Zincolia.');
-      else if (player.y < 1.0*TILE) loadMap('d2_boss', 11.5*TILE, 13.5*TILE, 0, "Fire Boss Lair");
+      if (player.x < 1.0*TILE && player.y > 6*TILE && player.y < 10*TILE) loadMap('overworld', 21.5*TILE, 7.5*TILE, -Math.PI/2, 'Returned to Zincolia.');
+      else if (player.y < 1.0*TILE && player.x > 10*TILE && player.x < 14*TILE) loadMap('d2_boss', 11.5*TILE, 13.5*TILE, 0, "Fire Boss Lair");
   }
-  else if(currentMapId==='d2_boss' && player.y > (ROWS-2.0)*TILE) {
+  else if(currentMapId==='d2_boss' && player.y > (ROWS-2.0)*TILE && player.x > 10*TILE && player.x < 14*TILE) {
       loadMap('d2_r1', 11.5*TILE, 1.5*TILE, Math.PI, 'Returned to Depths.');
   }
 }
@@ -892,45 +1156,39 @@ function updateEnemies(){
       if(!collides(nx,ny,e.w,e.h,currentMapId)){ e.x=nx; e.y=ny; } else { e.dx=-e.dx; e.dy=-e.dy; }
     }
     
-    // --- UNIQUE BOSS AI PATTERNS ---
     if(e.type==='boss'){
       if(e.subType === 'forest') {
-          if(e.tm%200===0){ e.x = 4*TILE + Math.random()*16*TILE; e.y = 2*TILE + Math.random()*8*TILE; }
-          if(e.tm%100===0) {
-              // 3-way aimed spread shot
-              for(let k=-1; k<=1; k++) {
-                  let ang = angleToPlayer + k*0.3;
-                  projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:10,h:10,dx:Math.cos(ang)*2.5,dy:Math.sin(ang)*2.5,life:150});
-              }
-          }
-          // Summon minion occasionally
+          e.spd = 1.3;
+          let dxVec = player.x - e.x, dyVec = player.y - e.y;
+          let emag = Math.hypot(dxVec, dyVec) || 1;
+          e.dx = dxVec/emag; e.dy = dyVec/emag;
+          const nx = e.x + e.dx * e.spd; const ny = e.y + e.dy * e.spd;
+          if(!collides(nx, ny, e.w, e.h, currentMapId)){ e.x = nx; e.y = ny; }
+          
           if(e.tm%300===0 && enemies.length < 5) {
               enemies.push({type:'moblin', subType:'forest', x: e.x, y: e.y, hp:2, mhp:2, spd:0.9, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
           }
       }
       else if(e.subType === 'fire') {
-          if(e.tm%150===0){ e.x = 4*TILE + Math.random()*16*TILE; e.y = 2*TILE + Math.random()*8*TILE; }
-          // Rapid fire spiral
-          if(e.tm%20===0 && (e.tm%150) > 50) {
+          if(e.tm%240===0){ e.x = 4*TILE + Math.random()*16*TILE; e.y = 2*TILE + Math.random()*8*TILE; }
+          if(e.tm%30===0 && (e.tm%240) > 60) {
               let ang = (e.tm * 0.1) % (Math.PI*2);
-              projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:10,h:10,dx:Math.cos(ang)*3.0,dy:Math.sin(ang)*3.0,life:150});
+              projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:14,h:14,dx:Math.cos(ang)*2.5,dy:Math.sin(ang)*2.5,life:150});
           }
       }
       else if(e.subType === 'final') {
-          if(e.tm%240===0){ e.x = 4*TILE + Math.random()*16*TILE; e.y = 2*TILE + Math.random()*8*TILE; }
-          // Hell mode: Huge ring of fire + Rapid aimed shots
-          if(e.tm%120===0) {
+          if(e.tm%300===0){ e.x = 4*TILE + Math.random()*16*TILE; e.y = 2*TILE + Math.random()*8*TILE; }
+          if(e.tm%150===0) {
               let count = 8;
               for(let k=0;k<count;k++){ 
                   const ang=(Math.PI*2/count)*k; 
-                  projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:10,h:10,dx:Math.cos(ang)*2.0,dy:Math.sin(ang)*2.0,life:150}); 
+                  projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:14,h:14,dx:Math.cos(ang)*2.0,dy:Math.sin(ang)*2.0,life:150}); 
               }
           }
-          if(e.tm%120===60) {
-              // Fast aimed cluster
-              for(let k=-2; k<=2; k++) {
+          if(e.tm%150===75) {
+              for(let k=-1; k<=1; k++) {
                   let ang = angleToPlayer + k*0.15;
-                  projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:10,h:10,dx:Math.cos(ang)*4.0,dy:Math.sin(ang)*4.0,life:150});
+                  projectiles.push({type:'fireball',x:e.x+e.w/2-5,y:e.y+e.h/2-5,w:14,h:14,dx:Math.cos(ang)*3.5,dy:Math.sin(ang)*3.5,life:150});
               }
           }
       }
@@ -985,7 +1243,8 @@ function updateDrops(){
     const d=drops[i]; d.life--; if(d.life<=0){ drops.splice(i,1); continue; }
     if(overlap({x:player.x,y:player.y,w:player.w,h:player.h}, {x:d.x,y:d.y,w:12,h:12})){
       sound('pick'); if(d.type==='heart') player.hp=Math.min(player.maxHp,player.hp+2);
-      if(d.type==='triforce'){ 
+      else if(d.type==='rupee') player.rupees += 1;
+      else if(d.type==='triforce'){ 
           player.triforce += 1; 
           
           if(player.triforce === 2 && currentMapId !== 'final') {
@@ -1004,8 +1263,12 @@ function interactableHint(){
   const tile=(maps[currentMapId].data[cy]||[])[cx];
     
   if(currentMapId==='spawn' && tile===12) return '[E] PULL ZINC BLADE';
-  if(currentMapId==='overworld' && Math.hypot((player.x+player.w/2)-144, (player.y+player.h/2)-430) < 45) return '[E] PLAY ARCADE';
-  if(currentMapId==='overworld' && tile===13) return 'Sealed by 2 Fragments.';
+  if(currentMapId==='spawn' && Math.hypot((player.x+player.w/2)-240, (player.y+player.h/2)-272) < 60) return '[E] VIEW LEADERBOARD';
+  if(currentMapId==='overworld') {
+      if(Math.hypot((player.x+player.w/2)-272, (player.y+player.h/2)-400) < 50) return '[E] BROWSE SHOP';
+      if(Math.hypot((player.x+player.w/2)-144, (player.y+player.h/2)-432) < 60) return '[E] PLAY ARCADE';
+      if(cy <= 2 && cx >= 10 && cx <= 13 && overworldMap[0][11] === 13) return 'Sealed by 2 Fragments.';
+  }
   return '';
 }
 
@@ -1104,7 +1367,6 @@ function init3D() {
     renderer.setPixelRatio(pixelRatio); 
     renderer.setSize(w, h);
     
-    // Performance optimization: Lower shadow resolution to compensate for massive map chunks
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap; 
     
@@ -1119,7 +1381,7 @@ function init3D() {
     dirLight.shadow.camera.left = -400; dirLight.shadow.camera.right = 400;
     dirLight.shadow.camera.top = 400; dirLight.shadow.camera.bottom = -400;
     dirLight.shadow.camera.far = 1500;
-    dirLight.shadow.mapSize.width = 512; // optimized shadow map size
+    dirLight.shadow.mapSize.width = 512; 
     dirLight.shadow.mapSize.height = 512;
     scene.add(dirLight);
     scene.add(dirLight.target);
@@ -1137,7 +1399,6 @@ function init3D() {
     const texDungeon = createNoiseTexture('#1a1a1a', '#222222', 'rock');
     if(texDungeon) texDungeon.repeat.set(COLS/2, ROWS/2);
 
-    // Performance Update: All materials changed from expensive MeshStandardMaterial to MeshLambertMaterial
     Mat.grassBase = new THREE.MeshLambertMaterial({ map: texGrass, color: texGrass ? 0xffffff : 0x4d8c31 });
     Mat.wall = new THREE.MeshLambertMaterial({ color: 0x7a6c5d });
     Mat.wood = new THREE.MeshLambertMaterial({ color: 0x5c4033 });
@@ -1155,10 +1416,11 @@ function init3D() {
     Mat.fire = new THREE.MeshBasicMaterial({ color: 0xff5500, transparent: true, opacity: 0.8 });
     Mat.particle = new THREE.MeshBasicMaterial({ color: 0xffdd55 });
     Mat.black = new THREE.MeshLambertMaterial({ color: 0x222222 });
-    Mat.pitchBlack = new THREE.MeshBasicMaterial({ color: 0x000000 }); // For doorways
+    Mat.pitchBlack = new THREE.MeshBasicMaterial({ color: 0x000000 }); 
     Mat.bombDark = new THREE.MeshLambertMaterial({ color: 0x111111 });
     Mat.arcade = new THREE.MeshLambertMaterial({ color: 0x333333 });
     Mat.screen = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
+    Mat.rupee = new THREE.MeshLambertMaterial({ color: 0x44ff44 });
     
     scene.add(staticMapGroup);
     scene.add(dynamicEntitiesGroup);
@@ -1192,7 +1454,6 @@ function buildStaticMap3D(mapId) {
         Mat.floorGen.color.setHex(0x442222); Mat.wallGen.color.setHex(0x552222);
         floorMat = Mat.floorGen;
     } else if (theme === 'final') {
-        // Brightened the final boss room background and lights
         scene.background.setHex(0x2a103a); scene.fog.color.setHex(0x2a103a);
         scene.fog.near = 100; scene.fog.far = 400;
         hemiLight.intensity = 0.6; dirLight.intensity = 0.6;
@@ -1235,6 +1496,14 @@ function buildStaticMap3D(mapId) {
                     if (x === 0 || x === COLS-1) hole.rotation.y = Math.PI/2;
                     m.add(frameObj); m.add(hole); py = TILE*0.75; 
                 }
+                else if (t === 17) { 
+                    m = new THREE.Group(); 
+                    let w = new THREE.Mesh(Geo.tallBox, Mat.wallGen);
+                    let plaque = new THREE.Mesh(new THREE.PlaneGeometry(TILE*0.6, TILE*0.8), Mat.gold);
+                    plaque.position.set(TILE*0.51, 0, 0); // Attached slightly past the right face
+                    plaque.rotation.y = Math.PI / 2;
+                    m.add(w); m.add(plaque); py = TILE*0.75;
+                }
             } else {
                 if (t === 1) { m = new THREE.Mesh(Geo.tallBox, Mat.wall); py = TILE*0.75; }
                 else if (t === 4) { 
@@ -1273,6 +1542,15 @@ function buildStaticMap3D(mapId) {
                     m.rotation.y = -Math.PI/6; 
                     py = 0; 
                 }
+                else if (t === 16) { 
+                    m = new THREE.Group(); 
+                    let body = new THREE.Mesh(new THREE.CylinderGeometry(4, 5, 10), Mat.wood);
+                    body.position.y = 5;
+                    let pack = new THREE.Mesh(new THREE.BoxGeometry(10, 12, 8), Mat.gold);
+                    pack.position.set(0, 8, 4);
+                    m.add(body); m.add(pack);
+                    py = 0; 
+                }
                 else if (t === 0) {
                     if (Math.random() < 0.05) { m = new THREE.Mesh(Geo.rock, Mat.wall); m.scale.setScalar(0.5+Math.random()*0.5); m.rotation.set(Math.random(),Math.random(),Math.random()); py = 2; px+=(Math.random()-.5)*16; pz+=(Math.random()-.5)*16; }
                     else if (Math.random() < 0.2) {
@@ -1282,7 +1560,13 @@ function buildStaticMap3D(mapId) {
                     }
                 }
             }
-            if (m) { m.position.set(px, py, pz); m.castShadow = true; m.receiveShadow = true; if(m.isGroup) m.children.forEach(c=>{c.castShadow=true; c.receiveShadow=true;}); group.add(m); }
+            if (m) { 
+                m.position.set(px, py, pz); 
+                m.castShadow = false; 
+                m.receiveShadow = true; 
+                if(m.isGroup) m.children.forEach(c=>{c.castShadow=false; c.receiveShadow=true;}); 
+                group.add(m); 
+            }
         }
     }
     return group;
@@ -1385,8 +1669,9 @@ function getMeshFor(obj, typeStr) {
         else if(typeStr === 'sword') mesh = buildSword3D();
         else if(typeStr === 'particle') mesh = new THREE.Mesh(new THREE.BoxGeometry(3,3,3), new THREE.MeshBasicMaterial({color: obj.color}));
         else if(typeStr === 'heart') mesh = new THREE.Mesh(new THREE.BoxGeometry(8,8,8), Mat.fire);
+        else if(typeStr === 'rupee') mesh = new THREE.Mesh(new THREE.OctahedronGeometry(6, 0), Mat.rupee);
         else if(typeStr === 'triforce') mesh = new THREE.Mesh(new THREE.TetrahedronGeometry(10), Mat.gold);
-        else if(typeStr === 'fireball') mesh = new THREE.Mesh(new THREE.BoxGeometry(6,6,6), Mat.fire);
+        else if(typeStr === 'fireball') mesh = new THREE.Mesh(new THREE.SphereGeometry(8,8,8), new THREE.MeshBasicMaterial({color: 0xffdd00}));
         else if(typeStr === 'bomb') {
             mesh = new THREE.Group();
             let b = new THREE.Mesh(new THREE.SphereGeometry(6, 16, 16), Mat.bombDark);
@@ -1435,7 +1720,7 @@ function sync3D() {
             pm.rotation.y = player.visualAngle || 0;
             
             if (player.rollTimer > 0) {
-                pm.userData.inner.rotation.x = (player.rollTimer / 15) * Math.PI * 2;
+                pm.userData.inner.rotation.x = - (player.rollTimer / 15) * Math.PI * 2;
                 pm.position.y = Math.sin((player.rollTimer / 15) * Math.PI) * 10; 
             } else {
                 pm.userData.inner.rotation.x = 0;
@@ -1526,31 +1811,36 @@ function sync3D() {
     projectiles.forEach(p => { activeLogicObjects.add(p); let m = getMeshFor(p, p.type); m.position.set(p.x+p.w/2, 10, p.y+p.h/2); });
     particles.forEach(p => { activeLogicObjects.add(p); let m = getMeshFor(p, 'particle'); m.position.set(p.x, 10 + (24-p.life)*2 - p.dy*2, p.y); m.material.opacity = p.life/24; });
 
-    for(let i = dynamicEntitiesGroup.children.length - 1; i >= 0; i--) {
-        let child = dynamicEntitiesGroup.children[i]; let found = false;
-        for (let [logicObj, mesh] of meshesDict.entries()) { if(mesh === child) { if(!activeLogicObjects.has(logicObj)) { dynamicEntitiesGroup.remove(child); meshesDict.delete(logicObj); } found = true; break; } }
-        if(!found) dynamicEntitiesGroup.remove(child);
+    for (let [logicObj, mesh] of meshesDict.entries()) {
+        if (!activeLogicObjects.has(logicObj)) {
+            dynamicEntitiesGroup.remove(mesh);
+            meshesDict.delete(logicObj);
+        }
     }
 
     let p3x = player.x + player.w/2, p3z = player.y + player.h/2, p3y = 8;
     let camDist = 140;
     
-    // Zoom in tight for spawn room
     if (currentMapId === 'spawn') camDist = 70;
     
     let idealCamX = p3x - Math.sin(camYaw || 0) * camDist * Math.cos(camPitch || 0);
     let idealCamZ = p3z + Math.cos(camYaw || 0) * camDist * Math.cos(camPitch || 0); 
     let idealCamY = p3y + Math.sin(camPitch || 0) * camDist;
     
-    currentCamPos.lerp(new THREE.Vector3(idealCamX, idealCamY, idealCamZ), 0.15);
-    camera.position.copy(currentCamPos);
+    if(!isNaN(idealCamX) && !isNaN(idealCamY) && !isNaN(idealCamZ)) {
+        currentCamPos.set(idealCamX, idealCamY, idealCamZ);
+    }
     
     let lookDist = 100;
     let idealLookX = p3x + Math.sin(camYaw || 0) * lookDist;
     let idealLookZ = p3z - Math.cos(camYaw || 0) * lookDist; 
     let idealLookY = p3y + 10 - Math.sin(camPitch || 0)*20;
     
-    currentLookTarget.lerp(new THREE.Vector3(idealLookX, idealLookY, idealLookZ), 0.25);
+    if(!isNaN(idealLookX) && !isNaN(idealLookY) && !isNaN(idealLookZ)) {
+        currentLookTarget.set(idealLookX, idealLookY, idealLookZ);
+    }
+    
+    camera.position.copy(currentCamPos);
     camera.lookAt(currentLookTarget);
 
     let targetFOV = player.sprinting ? 75 : 65;
@@ -1569,7 +1859,12 @@ const timeStep = 1000 / 60;
 function gameLoop(currentTime) {
     requestAnimationFrame(gameLoop);
     
-    updateGamepad(); // Poll controller hardware constantly
+    if (speedrunActive) {
+        speedrunTime = Date.now() - speedrunStartTime;
+        document.getElementById('hud-timer').innerText = formatTime(speedrunTime);
+    }
+    
+    updateGamepad(); 
     
     let now = currentTime || performance.now();
     if (!lastTime) lastTime = now;
