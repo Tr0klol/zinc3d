@@ -66,7 +66,7 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
 #shop-panel h2 { color: #d4af37; text-shadow: 3px 3px 0 #000; margin-bottom: 20px; font-size: 28px; }
 #beedle-msg { font-size: 14px; color: #fff; line-height: 1.6; margin-bottom: 30px; background: #000; padding: 15px; border: 2px solid #555; text-shadow: 2px 2px 0 #000; min-height: 60px; }
 .shop-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 15px; margin-bottom: 15px; border: 2px solid #444; transition: transform 0.1s, border-color 0.1s; }
-.shop-item:hover { border-color: #d4af37; transform: scale(1.02); }
+.shop-item:hover, .shop-item.selected { border-color: #00ffcc; transform: scale(1.02); box-shadow: 0 0 15px rgba(0,255,204,0.3); }
 .shop-item-info { text-align: left; }
 .shop-item-name { font-size: 16px; color: #fff; margin-bottom: 8px; text-shadow: 2px 2px 0 #000; }
 .shop-item-desc { font-size: 10px; color: #aaa; }
@@ -162,7 +162,7 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
             <button class="shop-buy-btn" onclick="buyItem('bomb')">10 ♦</button>
         </div>
         
-        <button id="shop-close-btn" onclick="exitShop()">LEAVE SHOP</button>
+        <button id="shop-close-btn" onclick="exitShop()">LEAVE SHOP (B)</button>
     </div>
 </div>
 
@@ -170,7 +170,7 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
     <div id="shop-panel">
         <h2>HALL OF FAME</h2>
         <div id="lb-list" style="margin-bottom: 20px; max-height: 250px; overflow-y: auto;">Loading...</div>
-        <button id="shop-close-btn" onclick="closeLeaderboard()">CLOSE</button>
+        <button id="shop-close-btn" onclick="closeLeaderboard()">CLOSE (B)</button>
     </div>
 </div>
 
@@ -181,7 +181,7 @@ body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; 
         <input type="text" id="sr-name" maxlength="5" placeholder="NAME">
         <button onclick="submitSpeedrun()">SUBMIT</button>
     </div>
-    <div class="go" onclick="document.getElementById('win-ui').style.display='none'; resetGame();">PLAY AGAIN</div>
+    <div class="go" onclick="document.getElementById('win-ui').style.display='none'; resetGame();">PLAY AGAIN (A)</div>
 </div>
 
 <div id="ov">
@@ -204,11 +204,17 @@ let db, auth, currentUser = null;
 let leaderboardData = [];
 let appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 let speedrunTime = 0, speedrunActive = false, speedrunStartTime = 0;
+let useLocalStorage = false;
 
 window.dbCollection = null; window.dbAddDoc = null; window.dbOnSnapshot = null;
 
 async function initFirebase() {
-    if (typeof __firebase_config === 'undefined') return;
+    if (typeof __firebase_config === 'undefined' || !__firebase_config) {
+        // Fallback to local storage if running outside of Gemini environment
+        useLocalStorage = true;
+        fetchLeaderboard();
+        return;
+    }
     try {
         const config = JSON.parse(__firebase_config);
         const { initializeApp } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
@@ -225,20 +231,40 @@ async function initFirebase() {
         else await signInAnonymously(auth);
 
         onAuthStateChanged(auth, user => { currentUser = user; if (user) fetchLeaderboard(); });
-    } catch(e) { console.error("Firebase disabled/failed.", e); }
+    } catch(e) { 
+        console.error("Firebase disabled/failed.", e); 
+        useLocalStorage = true;
+        fetchLeaderboard();
+    }
 }
 initFirebase();
 
 function fetchLeaderboard() {
+    if (useLocalStorage) {
+        leaderboardData = JSON.parse(localStorage.getItem('zinc_leaderboard') || '[]');
+        renderLeaderboard();
+        return;
+    }
+
     if (!window.dbCollection || !currentUser) return;
     const colRef = window.dbCollection(db, 'artifacts', appId, 'public', 'data', 'speedruns');
+    
+    document.getElementById('lb-list').innerHTML = "<p style='color:#ccc; font-size:12px;'>Fetching times...</p>";
+    
     window.dbOnSnapshot(colRef, (snapshot) => {
         let runs = [];
-        snapshot.forEach(doc => runs.push(doc.data()));
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.name && data.time) runs.push(data);
+        });
         runs.sort((a,b) => a.time - b.time);
         leaderboardData = runs.slice(0, 10);
         renderLeaderboard();
-    }, (error) => console.error(error));
+    }, (error) => {
+        console.error("Cloud DB blocked/empty. Switching to local saves.", error);
+        useLocalStorage = true;
+        fetchLeaderboard();
+    });
 }
 
 function formatTime(ms) {
@@ -252,10 +278,13 @@ function formatTime(ms) {
 function renderLeaderboard() {
     const list = document.getElementById('lb-list');
     if (leaderboardData.length === 0) {
-        list.innerHTML = "<p style='color:#ccc; font-size:12px;'>No times recorded yet.</p>"; return;
+        list.innerHTML = `<p style='color:#ccc; font-size:12px;'>No times recorded yet.<br>${useLocalStorage ? '(Offline Mode)' : ''}</p>`; 
+        return;
     }
     let html = "";
-    leaderboardData.forEach((run, i) => { html += `<div class="lb-row"><span>${i+1}. ${run.name}</span> <span>${formatTime(run.time)}</span></div>`; });
+    leaderboardData.forEach((run, i) => { 
+        html += `<div class="lb-row"><span>${i+1}. ${run.name || 'ANON'}</span> <span>${formatTime(run.time || 0)}</span></div>`; 
+    });
     list.innerHTML = html;
 }
 
@@ -275,18 +304,35 @@ function closeLeaderboard() {
 }
 
 async function submitSpeedrun() {
-    const nameInput = document.getElementById('sr-name').value.trim().toUpperCase();
-    if (!nameInput) return;
-    if (!window.dbAddDoc || !currentUser) {
-        showMessage("Online saves unavailable!"); document.getElementById('submit-score-box').style.display = 'none'; return;
-    }
+    let nameInput = document.getElementById('sr-name').value.trim().toUpperCase();
+    if (!nameInput) nameInput = "ANON";
+    
     document.getElementById('submit-score-box').style.display = 'none';
+    
+    if (useLocalStorage) {
+        leaderboardData.push({ name: nameInput.substring(0, 5), time: speedrunTime });
+        leaderboardData.sort((a,b) => a.time - b.time);
+        localStorage.setItem('zinc_leaderboard', JSON.stringify(leaderboardData));
+        showMessage("Offline score saved!");
+        fetchLeaderboard();
+        return;
+    }
+
+    if (!window.dbAddDoc || !currentUser) {
+        showMessage("Online saves unavailable!"); 
+        return;
+    }
+    
     showMessage("Submitting score...");
     const colRef = window.dbCollection(db, 'artifacts', appId, 'public', 'data', 'speedruns');
     try {
         await window.dbAddDoc(colRef, { name: nameInput.substring(0, 5), time: speedrunTime, timestamp: Date.now(), uid: currentUser.uid });
         showMessage("Score submitted!");
-    } catch(e) { showMessage("Error submitting score."); }
+        fetchLeaderboard(); 
+    } catch(e) { 
+        console.error(e);
+        showMessage("Error submitting score."); 
+    }
 }
 
 // --- CORE GAME STATE & CONSTANTS ---
@@ -485,6 +531,7 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 let joyActive = false, joyTouchId = null, joyBaseX = 0, joyBaseY = 0, joyDX = 0, joyDY = 0;
 let lookTouchId = null, lastLookX = 0, lastLookY = 0;
 let gpDX = 0, gpDY = 0; 
+let shopSelectedIndex = 0; // Gamepad Support for shop
 
 const joyBaseEl = document.getElementById('joystick-base');
 const joyStickEl = document.getElementById('joystick-stick');
@@ -564,6 +611,14 @@ bindBtn('btn-sprint', () => keys.shift=true, () => keys.shift=false);
 bindBtn('btn-roll', () => { keys.space=true; setTimeout(()=>keys.space=false, 100); }, () => {});
 bindBtn('btn-interact', () => { keys.e=true; setTimeout(()=>keys.e=false, 100); }, () => {});
 
+function updateShopUI() {
+    const items = document.querySelectorAll('.shop-item');
+    items.forEach((item, index) => {
+        if (index === shopSelectedIndex) item.classList.add('selected');
+        else item.classList.remove('selected');
+    });
+}
+
 // --- GAMEPAD SUPPORT ---
 function updateGamepad() {
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -592,6 +647,32 @@ function updateGamepad() {
         placeBomb(); keys._gp_bomb = true;
     } else if (!gp.buttons[3]?.pressed) {
         keys._gp_bomb = false;
+    }
+
+    // Interactive UI Menus Gamepad Navigation
+    if (gameState === 'shop') {
+        if (gpDY < -0.5 && !keys._gp_up) { shopSelectedIndex = 0; updateShopUI(); keys._gp_up = true; }
+        else if (gpDY >= -0.5) keys._gp_up = false;
+
+        if (gpDY > 0.5 && !keys._gp_down) { shopSelectedIndex = 1; updateShopUI(); keys._gp_down = true; }
+        else if (gpDY <= 0.5) keys._gp_down = false;
+
+        if (gp.buttons[0]?.pressed && !keys._gp_a) { 
+            buyItem(shopSelectedIndex === 0 ? 'heart' : 'bomb'); 
+            keys._gp_a = true; 
+        } else if (!gp.buttons[0]?.pressed) { keys._gp_a = false; }
+    }
+    
+    if (gameState === 'win') {
+        if (gp.buttons[0]?.pressed && !keys._gp_a) { 
+            if (document.getElementById('submit-score-box').style.display !== 'none') {
+                submitSpeedrun(); 
+            } else {
+                document.getElementById('win-ui').style.display='none'; 
+                resetGame();
+            }
+            keys._gp_a = true; 
+        } else if (!gp.buttons[0]?.pressed) { keys._gp_a = false; }
     }
 
     if(gp.buttons[1]?.pressed && !keys._gp_e) {
@@ -873,6 +954,8 @@ function interact(){
 // --- BEEDLE SHOP LOGIC ---
 function openShop() {
     gameState = 'shop';
+    shopSelectedIndex = 0;
+    updateShopUI();
     beedleMsgText.innerText = '"Oooooh! Welcome to my shop! See anything you like?"';
     document.getElementById('mobile-ui').style.display = 'none';
     document.getElementById('shop-ui').style.display = 'flex';
@@ -1126,7 +1209,12 @@ function movePlayer(){
   if(!collides(player.x+2,nyp+2,player.w-4,player.h-4,currentMapId)) player.y=nyp;
   
   if(currentMapId==='spawn' && player.y < 4.0*TILE && player.x > 10*TILE && player.x < 13*TILE) {
-      loadMap('overworld', 11.5*TILE, 13.5*TILE, 0, 'Welcome to Zincolia.');
+      if (!player.hasSword) {
+          player.y = 4.0 * TILE; // Blocker: Prevent exiting without the sword
+          showMessage("You cannot leave without the Zinc Blade!");
+      } else {
+          loadMap('overworld', 11.5*TILE, 13.5*TILE, 0, 'Welcome to Zincolia.');
+      }
   }
   else if(currentMapId==='overworld') {
       if (player.x < 1.0*TILE && player.y > 6*TILE && player.y < 10*TILE) loadMap('d1_r1', 21.5*TILE, 7.5*TILE, -Math.PI/2, 'The Overgrown Temple');
@@ -1180,21 +1268,21 @@ function updateEnemies(){
       else if(e.subType === 'fire') {
           if (!e.state) e.state = 'idle';
           
-          let cycle = e.tm % 240; // Lengthened attack loop to 4 seconds
+          let cycle = e.tm % 240; 
           
           if (cycle === 0) { 
               e.state = 'dash'; 
               e.dashAng = angleToPlayer; 
-              e.spd = 4.5; // Slightly more readable charge speed
+              e.spd = 4.5; 
               sound('roll');
           }
           if (cycle === 40) { 
               e.state = 'stunned'; 
-              e.spd = 0; // Exhausted state! Big punish window!
+              e.spd = 0; 
           }
           if (cycle === 140) { 
               e.state = 'idle'; 
-              e.spd = 0.5; // Start moving and preparing fireballs
+              e.spd = 0.5; 
           }
 
           if (e.state === 'dash') {
@@ -1202,20 +1290,16 @@ function updateEnemies(){
               const nx = e.x + e.dx * e.spd; const ny = e.y + e.dy * e.spd;
               if(!collides(nx, ny, e.w, e.h, currentMapId)){ e.x = nx; e.y = ny; }
               
-              // Only drop tiny fast-vanishing embers during dash
               if (e.tm % 6 === 0) {
                   projectiles.push({type:'fireball',x:e.x+e.w/2-6,y:e.y+e.h/2-6,w:12,h:12,dx:0,dy:0,life:30});
               }
           } else if (e.state === 'stunned') {
-              // Stand completely still, do nothing. Free hits!
               e.dx = 0; e.dy = 0;
           } else if (e.state === 'idle') {
-              // Drift slowly
               e.dx = Math.cos(e.tm * 0.05); e.dy = Math.sin(e.tm * 0.05);
               const nx = e.x + e.dx * e.spd; const ny = e.y + e.dy * e.spd;
               if(!collides(nx, ny, e.w, e.h, currentMapId)){ e.x = nx; e.y = ny; }
               
-              // Only throw explicitly on these frames to prevent overlap with dash
               if (cycle === 160 || cycle === 200) {
                   projectiles.push({type:'fireball',x:e.x+e.w/2-6,y:e.y+e.h/2-6,w:12,h:12,dx:Math.cos(angleToPlayer)*3,dy:Math.sin(angleToPlayer)*3,life:100});
               }
@@ -1231,12 +1315,11 @@ function updateEnemies(){
               let count = 12;
               let gapOffset = Math.floor(Math.random() * count);
               for(let k=0;k<count;k++){ 
-                  if (k === gapOffset || k === (gapOffset + 1) % count) continue; // Leave an empty space to roll through
+                  if (k === gapOffset || k === (gapOffset + 1) % count) continue; 
                   const ang=(Math.PI*2/count)*k; 
                   projectiles.push({type:'fireball',x:e.x+e.w/2-8,y:e.y+e.h/2-8,w:16,h:16,dx:Math.cos(ang)*2.2,dy:Math.sin(ang)*2.2,life:200}); 
               }
           }
-          // Attack 2: Delayed Targeted Spread
           if(e.tm % 180 === 90) {
               for(let k=-1; k<=1; k++) {
                   let ang = angleToPlayer + k*0.2;
@@ -1508,7 +1591,7 @@ function buildStaticMap3D(mapId) {
     } else if (theme === 'final') {
         scene.background.setHex(0x2a103a); scene.fog.color.setHex(0x2a103a);
         scene.fog.near = 100; scene.fog.far = 400;
-        hemiLight.intensity = 0.9; dirLight.intensity = 0.7; // Brightened significantly to easily spot gaps!
+        hemiLight.intensity = 0.9; dirLight.intensity = 0.7; 
         Mat.floorGen.color.setHex(0x331144); Mat.wallGen.color.setHex(0x221133);
         floorMat = Mat.floorGen;
     } else { // overworld
@@ -1552,7 +1635,7 @@ function buildStaticMap3D(mapId) {
                     m = new THREE.Group(); 
                     let w = new THREE.Mesh(Geo.tallBox, Mat.wallGen);
                     let plaque = new THREE.Mesh(new THREE.PlaneGeometry(TILE*0.6, TILE*0.8), Mat.gold);
-                    plaque.position.set(TILE*0.51, 0, 0); // Attached slightly past the right face
+                    plaque.position.set(TILE*0.51, 0, 0); 
                     plaque.rotation.y = Math.PI / 2;
                     m.add(w); m.add(plaque); py = TILE*0.75;
                 }
@@ -1571,12 +1654,12 @@ function buildStaticMap3D(mapId) {
                     let door = new THREE.Mesh(Geo.door, Mat.black); door.position.x = t===5?-16:16; door.rotation.y = Math.PI/2; door.position.y = -8; 
                     m.add(b); m.add(door); py = TILE*0.75; 
                 }
-                else if (t === 13) { // Locked Gate
+                else if (t === 13) { 
                     m = new THREE.Group(); let b = new THREE.Mesh(Geo.tallBox, Mat.black); 
                     let door = new THREE.Mesh(Geo.door, Mat.brown); door.position.z = -16; door.position.y = -8; 
                     m.add(b); m.add(door); py = TILE*0.75; 
                 }
-                else if (t === 14 || t === 15 || t === 7) { // Solid Doorways / Exits
+                else if (t === 14 || t === 15 || t === 7) { 
                     m = new THREE.Group(); 
                     let frameObj = new THREE.Mesh(Geo.tallBox, Mat.wall); 
                     let hole = new THREE.Mesh(new THREE.BoxGeometry(TILE*0.6, TILE*1.2, TILE*1.1), Mat.pitchBlack);
@@ -1630,7 +1713,6 @@ function refresh3DMap() {
     scene.add(staticMapGroup);
 }
 
-// Improved 3D Builders
 function buildPlayer3D() {
     const g = new THREE.Group();
     const inner = new THREE.Group(); 
