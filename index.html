@@ -210,7 +210,6 @@ window.dbCollection = null; window.dbAddDoc = null; window.dbOnSnapshot = null;
 
 async function initFirebase() {
     if (typeof __firebase_config === 'undefined' || !__firebase_config) {
-        // Fallback to local storage if running outside of Gemini environment
         useLocalStorage = true;
         fetchLeaderboard();
         return;
@@ -343,7 +342,7 @@ const hintEl = document.getElementById('interaction-hint');
 const crosshairEl = document.getElementById('crosshair');
 
 const TILE = 32, COLS = 24, ROWS = 16, WIDTH = COLS*TILE, HEIGHT = ROWS*TILE;
-let gameState = 'title'; // 'title', 'play', 'pong', 'gameover', 'win', 'menu', 'shop'
+let gameState = 'title'; 
 let frame = 0;
 let keys = {};
 let lastMouseTime = 0;
@@ -383,51 +382,73 @@ function makeSmallMap(w, h) {
     return map;
 }
 
-// 1. Spawn Room (Chamber of Awakening)
 const spawnRoom = makeSmallMap(10, 10);
-spawnRoom[7][11] = 12; // Pedestal with Sword
-spawnRoom[3][11] = 15; spawnRoom[3][12] = 15; // Exit Archway North -> Overworld
-spawnRoom[8][7] = 17; // LEADERBOARD PLAQUE on the left wall
+spawnRoom[7][11] = 12; 
+spawnRoom[3][11] = 15; spawnRoom[3][12] = 15; 
+spawnRoom[8][7] = 17; 
 
-// 2. Overworld (Zincolia)
 const overworldMap = makeBorderedMap();
-overworldMap[ROWS-1][11] = 14; overworldMap[ROWS-1][12] = 14; // Awakening Entrance (solid)
-overworldMap[12][8] = 16; // Beedle NPC / Merchant
+overworldMap[ROWS-1][11] = 14; overworldMap[ROWS-1][12] = 14; 
+overworldMap[12][8] = 16; 
 for(let i=0; i<40; i++) {
     let tx = 1 + Math.floor(Math.random()*(COLS-2));
     let ty = 1 + Math.floor(Math.random()*(ROWS-2));
     if(tx > 9 && tx < 14) continue; 
     if(ty > 6 && ty < 10) continue;
-    if(tx >= 3 && tx <= 5 && ty >= 12 && ty <= 14) continue; // Arcade space
-    if(tx >= 7 && tx <= 9 && ty >= 11 && ty <= 13) continue; // Merchant space
+    if(tx >= 3 && tx <= 5 && ty >= 12 && ty <= 14) continue; 
+    if(tx >= 7 && tx <= 9 && ty >= 11 && ty <= 13) continue; 
     if(overworldMap[ty][tx] === 0) overworldMap[ty][tx] = 4;
 }
-overworldMap[7][0] = 15; overworldMap[8][0] = 15; // Archway West -> D1
-overworldMap[7][COLS-1] = 15; overworldMap[8][COLS-1] = 15; // Archway East -> D2
-overworldMap[0][11] = 13; overworldMap[0][12] = 13; // North -> Final Boss (Locked)
-overworldMap[13][4] = 6; overworldMap[14][4] = 4; overworldMap[13][3] = 4; overworldMap[13][5] = 4; // Arcade setup
+overworldMap[7][0] = 15; overworldMap[8][0] = 15; 
+overworldMap[7][COLS-1] = 15; overworldMap[8][COLS-1] = 15; 
+overworldMap[0][11] = 13; overworldMap[0][12] = 13; 
+overworldMap[13][4] = 6; overworldMap[14][4] = 4; overworldMap[13][3] = 4; overworldMap[13][5] = 4; 
 
-// 3. Dungeon 1 (Forest)
 const d1_r1 = makeBorderedMap();
-d1_r1[7][COLS-1] = 15; d1_r1[8][COLS-1] = 15; // Archway East -> Overworld
-d1_r1[0][11] = 2; d1_r1[0][12] = 2; // Locked North -> D1 Boss
-d1_r1[4][4] = 1; d1_r1[4][19] = 1; d1_r1[11][4] = 1; d1_r1[11][19] = 1;
+d1_r1[7][COLS-1] = 15; d1_r1[8][COLS-1] = 15; 
+d1_r1[0][11] = 2; d1_r1[0][12] = 2; 
+// fill with water
+for(let y=1; y<ROWS-1; y++) for(let x=1; x<COLS-1; x++) d1_r1[y][x] = 19;
+// right entrance bridge
+for(let x=19; x<=22; x++) { d1_r1[7][x] = 0; d1_r1[8][x] = 0; }
+for(let x=13; x<=19; x++) { d1_r1[7][x] = 0; d1_r1[8][x] = 0; }
+// central island
+for(let y=6; y<=9; y++) for(let x=9; x<=14; x++) d1_r1[y][x] = 0;
+// up to door
+for(let y=1; y<=6; y++) { d1_r1[y][11] = 0; d1_r1[y][12] = 0; }
+
+// side islands for enemies & connecting bridges
+for(let y=11; y<=13; y++) for(let x=13; x<=16; x++) d1_r1[y][x] = 0;
+d1_r1[9][14]=0; d1_r1[10][14]=0; d1_r1[9][15]=0; d1_r1[10][15]=0; // bottom-right bridge
+
+for(let y=3; y<=5; y++) for(let x=5; x<=8; x++) d1_r1[y][x] = 0;
+d1_r1[4][9]=0; d1_r1[4][10]=0; d1_r1[5][9]=0; d1_r1[5][10]=0; // top-left bridge
+
+for(let y=10; y<=12; y++) for(let x=4; x<=7; x++) d1_r1[y][x] = 0;
+d1_r1[10][8]=0; d1_r1[11][8]=0; d1_r1[10][9]=0; d1_r1[11][9]=0; // bottom-left bridge
 
 const d1_boss = makeBorderedMap();
-d1_boss[ROWS-1][11] = 15; d1_boss[ROWS-1][12] = 15; // Archway South -> D1 R1
+d1_boss[ROWS-1][11] = 15; d1_boss[ROWS-1][12] = 15; 
 
-// 4. Dungeon 2 (Fire)
 const d2_r1 = makeBorderedMap();
-d2_r1[7][0] = 15; d2_r1[8][0] = 15; // Archway West -> Overworld
-d2_r1[0][11] = 2; d2_r1[0][12] = 2; // Locked North -> D2 Boss
-d2_r1[5][8] = 1; d2_r1[5][15] = 1; d2_r1[10][8] = 1; d2_r1[10][15] = 1;
+d2_r1[7][0] = 15; d2_r1[8][0] = 15; 
+d2_r1[0][11] = 2; d2_r1[0][12] = 2; 
+// fill with lava
+for(let y=1; y<ROWS-1; y++) for(let x=1; x<COLS-1; x++) d2_r1[y][x] = 18;
+// left entrance bridge
+for(let x=1; x<=4; x++) { d2_r1[7][x] = 0; d2_r1[8][x] = 0; }
+// narrow zig-zag
+for(let y=8; y<=13; y++) { d2_r1[y][3] = 0; d2_r1[y][4] = 0; }
+for(let x=3; x<=19; x++) { d2_r1[12][x] = 0; d2_r1[13][x] = 0; }
+for(let y=4; y<=12; y++) { d2_r1[y][18] = 0; d2_r1[y][19] = 0; }
+for(let x=11; x<=19; x++) { d2_r1[4][x] = 0; d2_r1[5][x] = 0; }
+for(let y=1; y<=4; y++) { d2_r1[y][11] = 0; d2_r1[y][12] = 0; }
 
 const d2_boss = makeBorderedMap();
-d2_boss[ROWS-1][11] = 15; d2_boss[ROWS-1][12] = 15; // Archway South -> D2 R1
+d2_boss[ROWS-1][11] = 15; d2_boss[ROWS-1][12] = 15; 
 
-// 5. Final Boss (Obsidian)
 const final_boss = makeBorderedMap();
-final_boss[ROWS-1][11] = 15; final_boss[ROWS-1][12] = 15; // Archway South -> Overworld
+final_boss[ROWS-1][11] = 15; final_boss[ROWS-1][12] = 15; 
 
 const maps = {
     'spawn': { data: spawnRoom, theme: 'spawn' },
@@ -527,11 +548,10 @@ document.body.addEventListener('mouseup', e => {
 });
 document.addEventListener('contextmenu', e => e.preventDefault());
 
-// Mobile Touch Controls
 let joyActive = false, joyTouchId = null, joyBaseX = 0, joyBaseY = 0, joyDX = 0, joyDY = 0;
 let lookTouchId = null, lastLookX = 0, lastLookY = 0;
 let gpDX = 0, gpDY = 0; 
-let shopSelectedIndex = 0; // Gamepad Support for shop
+let shopSelectedIndex = 0;
 
 const joyBaseEl = document.getElementById('joystick-base');
 const joyStickEl = document.getElementById('joystick-stick');
@@ -649,7 +669,6 @@ function updateGamepad() {
         keys._gp_bomb = false;
     }
 
-    // Interactive UI Menus Gamepad Navigation
     if (gameState === 'shop') {
         if (gpDY < -0.5 && !keys._gp_up) { shopSelectedIndex = 0; updateShopUI(); keys._gp_up = true; }
         else if (gpDY >= -0.5) keys._gp_up = false;
@@ -704,7 +723,6 @@ function updateGamepad() {
     }
 }
 
-// --- GAME LOGIC ---
 function showMessage(text,ttl=180){ 
     msgText.innerText=text; 
     msgText.style.opacity='1'; 
@@ -727,7 +745,7 @@ function updateHUD(){
 }
 
 function isSolid(tile, mapId){
-    if(tile === 1 || tile === 2 || tile === 4 || tile === 6 || tile === 13 || tile === 14 || tile === 15 || tile === 16 || tile === 17) return true;
+    if(tile === 1 || tile === 2 || tile === 4 || tile === 6 || tile === 13 || tile === 14 || tile === 15 || tile === 16 || tile === 17 || tile === 18 || tile === 19) return true;
     return false;
 }
 
@@ -747,26 +765,24 @@ function collides(x,y,w,h,mapId){
 function spawnEnemies(mapId){
   enemies=[];
   if(mapId === 'd1_r1' && !d1Cleared){
-      d1_r1[0][11] = 2; d1_r1[0][12] = 2; // Ensure door is locked
-      enemies.push({type:'moblin', subType:'forest', x: 6*TILE, y: 6*TILE, hp:3, mhp:3, spd:0.8, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
-      enemies.push({type:'moblin', subType:'forest', x: 18*TILE, y: 6*TILE, hp:3, mhp:3, spd:0.8, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
-      enemies.push({type:'moblin', subType:'forest', x: 12*TILE, y: 10*TILE, hp:3, mhp:3, spd:0.8, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
+      d1_r1[0][11] = 2; d1_r1[0][12] = 2; 
+      enemies.push({type:'moblin', subType:'forest', x: 5.5*TILE, y: 11.5*TILE, hp:3, mhp:3, spd:0.8, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
+      enemies.push({type:'moblin', subType:'forest', x: 14.5*TILE, y: 12.5*TILE, hp:3, mhp:3, spd:0.8, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
+      enemies.push({type:'moblin', subType:'forest', x: 6.5*TILE, y: 4.5*TILE, hp:3, mhp:3, spd:0.8, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
   }
   if(mapId === 'd1_boss' && !d1Cleared){
       enemies.push({type:'boss', subType:'forest', x: 12*TILE-16, y: 6*TILE, hp:8, mhp:8, spd:0, w:32, h:32, dx:0, dy:0, tm:0, inv:0});
   }
   if(mapId === 'd2_r1' && !d2Cleared){
-      d2_r1[0][11] = 2; d2_r1[0][12] = 2; // Ensure door is locked
-      enemies.push({type:'moblin', subType:'fire', x: 6*TILE, y: 6*TILE, hp:4, mhp:4, spd:1.0, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
-      enemies.push({type:'moblin', subType:'fire', x: 18*TILE, y: 6*TILE, hp:4, mhp:4, spd:1.0, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
-      enemies.push({type:'moblin', subType:'fire', x: 12*TILE, y: 10*TILE, hp:4, mhp:4, spd:1.0, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
+      d2_r1[0][11] = 2; d2_r1[0][12] = 2; 
+      enemies.push({type:'moblin', subType:'fire', x: 3.5*TILE, y: 12.5*TILE, hp:4, mhp:4, spd:1.0, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
+      enemies.push({type:'moblin', subType:'fire', x: 18.5*TILE, y: 12.5*TILE, hp:4, mhp:4, spd:1.0, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
+      enemies.push({type:'moblin', subType:'fire', x: 18.5*TILE, y: 4.5*TILE, hp:4, mhp:4, spd:1.0, w:14, h:14, dx:0, dy:0, tm:0, inv:0});
   }
   if(mapId === 'd2_boss' && !d2Cleared){
-      // Expanded Fire Boss Hitbox from 32x32 to 56x56 so it matches his visual size!
       enemies.push({type:'boss', subType:'fire', x: 12*TILE-28, y: 6*TILE, hp:10, mhp:10, spd:0, w:56, h:56, dx:0, dy:0, tm:0, inv:0});
   }
   if(mapId === 'final' && !gameBeaten){
-      // Drastically widened hitbox to 110x90 to properly encompass his giant floating hands
       enemies.push({type:'boss', subType:'final', x: 12*TILE-55, y: 4*TILE, hp:20, mhp:20, spd:0, w:110, h:90, dx:0, dy:0, tm:0, inv:0});
   }
 }
@@ -854,7 +870,7 @@ function hitEnemy(idx,dmg,knockX,knockY){
     if(e.type==='boss'){ 
         if (currentMapId === 'final') {
             gameBeaten = true;
-            speedrunActive = false; // STOP SPEEDRUN TIMER!
+            speedrunActive = false; 
             sound('win'); gameState='win'; 
             try { document.exitPointerLock(); } catch(e){}
             document.getElementById('win-ui').style.display='flex'; 
@@ -918,7 +934,6 @@ function interact(){
   const cx=Math.floor((player.x+player.w/2)/TILE), cy=Math.floor((player.y+player.h/2)/TILE);
   const tile=(maps[currentMapId].data[cy]||[])[cx];
   
-  // SECRET DEV EGG: Top-right corner of Fire Dungeon Room 1 gives 999 bombs silently
   if(currentMapId === 'd2_r1' && cx >= 21 && cy <= 2) {
       player.bombs = 999;
       updateHUD();
@@ -930,7 +945,7 @@ function interact(){
       sound('pick');
       showMessage("You claimed the Zinc Blade! A hero is born.");
       
-      speedrunStartTime = Date.now(); // START SPEEDRUN TIMER!
+      speedrunStartTime = Date.now(); 
       speedrunActive = true;
       
       updateHUD(); refresh3DMap();
@@ -951,7 +966,6 @@ function interact(){
   }
 }
 
-// --- BEEDLE SHOP LOGIC ---
 function openShop() {
     gameState = 'shop';
     shopSelectedIndex = 0;
@@ -999,7 +1013,6 @@ function buyItem(itemType) {
     }
 }
 
-// --- PONG MINIGAME LOGIC ---
 function startPong() {
     gameState = 'pong';
     pong.x = pong.w/2; pong.y = pong.h/2; 
@@ -1040,7 +1053,7 @@ function updatePong() {
     
     pong.p1y = Math.max(0, Math.min(pong.h - 80, pong.p1y));
     
-    if (pong.delay > 0) { pong.delay--; return; } // Pause AI and ball temporarily
+    if (pong.delay > 0) { pong.delay--; return; } 
     
     let aiCenter = pong.p2y + 40;
     if (aiCenter < pong.y - 15) pong.p2y += 4.5;
@@ -1107,7 +1120,6 @@ function drawPong() {
     ctx.fillText(pong.p1s, pong.w/4 - 20, 60);
     ctx.fillText(pong.p2s, pong.w*3/4 - 20, 60);
 }
-// --- END PONG LOGIC ---
 
 function movePlayer(){
   let ix = 0, iy = 0;
@@ -1210,7 +1222,7 @@ function movePlayer(){
   
   if(currentMapId==='spawn' && player.y < 4.0*TILE && player.x > 10*TILE && player.x < 13*TILE) {
       if (!player.hasSword) {
-          player.y = 4.0 * TILE; // Blocker: Prevent exiting without the sword
+          player.y = 4.0 * TILE; 
           showMessage("You cannot leave without the Zinc Blade!");
       } else {
           loadMap('overworld', 11.5*TILE, 13.5*TILE, 0, 'Welcome to Zincolia.');
@@ -1383,7 +1395,7 @@ function updateDrops(){
           player.triforce += 1; 
           
           if(player.triforce === 2 && currentMapId !== 'final') {
-              overworldMap[0][11] = 7; overworldMap[0][12] = 7; // Open final gate
+              overworldMap[0][11] = 7; overworldMap[0][12] = 7; 
               showMessage("You collected 2 Fragments! The Obsidian Gate is now open.");
           }
       }
@@ -1534,14 +1546,17 @@ function init3D() {
     const texDungeon = createNoiseTexture('#1a1a1a', '#222222', 'rock');
     if(texDungeon) texDungeon.repeat.set(COLS/2, ROWS/2);
 
+    // Overworld Materials
     Mat.grassBase = new THREE.MeshLambertMaterial({ map: texGrass, color: texGrass ? 0xffffff : 0x4d8c31 });
     Mat.wall = new THREE.MeshLambertMaterial({ color: 0x7a6c5d });
     Mat.wood = new THREE.MeshLambertMaterial({ color: 0x5c4033 });
     Mat.leaves = new THREE.MeshLambertMaterial({ color: 0x3a7022 });
     
-    // Dynamic mats
+    // Reverted Dungeon Materials
     Mat.floorGen = new THREE.MeshLambertMaterial({ map: texDungeon, color: texDungeon ? 0xffffff : 0x1a1a1a });
     Mat.wallGen = new THREE.MeshLambertMaterial({ color: 0x2a3b4c });
+    Mat.lava = new THREE.MeshBasicMaterial({ color: 0xff4400 });
+    Mat.water = new THREE.MeshLambertMaterial({ color: 0x2288aa, transparent: true, opacity: 0.8 });
     
     Mat.gold = new THREE.MeshLambertMaterial({ color: 0xffd700 });
     Mat.tunic = new THREE.MeshLambertMaterial({ color: 0x1d8a1d });
@@ -1569,6 +1584,7 @@ function buildStaticMap3D(mapId) {
     const planeGeo = new THREE.PlaneGeometry(WIDTH, HEIGHT);
     
     let floorMat = Mat.grassBase;
+    let isPitMap = (mapId === 'd1_r1' || mapId === 'd2_r1');
     
     if (theme === 'spawn') {
         scene.background.setHex(0x1a2b4c); scene.fog.color.setHex(0x1a2b4c);
@@ -1600,9 +1616,12 @@ function buildStaticMap3D(mapId) {
         hemiLight.intensity = 0.6; dirLight.intensity = 0.8;
     }
 
+    if (mapId === 'd1_r1') floorMat = Mat.water;
+    if (mapId === 'd2_r1') floorMat = Mat.lava;
+
     const baseFloor = new THREE.Mesh(planeGeo, floorMat);
     baseFloor.rotation.x = -Math.PI / 2;
-    baseFloor.position.set(WIDTH / 2, 0, HEIGHT / 2);
+    baseFloor.position.set(WIDTH / 2, isPitMap ? -16 : 0, HEIGHT / 2);
     baseFloor.receiveShadow = true;
     group.add(baseFloor);
 
@@ -1614,14 +1633,20 @@ function buildStaticMap3D(mapId) {
             if (theme !== 'overworld') {
                 if (t === 1) { m = new THREE.Mesh(Geo.tallBox, Mat.wallGen); py = TILE*0.75; }
                 else if (t === 2 || t === 13) { m = new THREE.Group(); let w = new THREE.Mesh(Geo.tallBox, Mat.wallGen); let d = new THREE.Mesh(Geo.door, Mat.brown); d.position.z = 16; d.position.y = -8; m.add(w); m.add(d); py = TILE*0.75; }
-                else if (t === 3) m = new THREE.Mesh(Geo.box, Mat.floorGen);
+                else if (t === 3 && !isPitMap) m = new THREE.Mesh(Geo.box, Mat.floorGen);
                 else if (t === 8 || t === 9 || t === 11) m = new THREE.Mesh(new THREE.BoxGeometry(TILE, 4, TILE), Mat.gold);
                 else if (t === 12) { 
                     m = new THREE.Group(); 
                     let ped = new THREE.Mesh(new THREE.CylinderGeometry(8,12,10,6), Mat.wallGen);
                     let bl = new THREE.Mesh(new THREE.BoxGeometry(2,16,4), Mat.sword); bl.position.y=8;
                     let hd = new THREE.Mesh(new THREE.BoxGeometry(4,4,6), Mat.gold); hd.position.y=16;
-                    m.add(ped); m.add(bl); m.add(hd); py = 5;
+                    m.add(ped); m.add(bl); m.add(hd); 
+                    
+                    let spot = new THREE.PointLight(0x88ccff, 2, 100);
+                    spot.position.set(0, 40, 0);
+                    m.add(spot);
+                    
+                    py = 5;
                 }
                 else if (t === 14 || t === 15 || t === 7) { 
                     m = new THREE.Group(); 
@@ -1638,6 +1663,19 @@ function buildStaticMap3D(mapId) {
                     plaque.position.set(TILE*0.51, 0, 0); 
                     plaque.rotation.y = Math.PI / 2;
                     m.add(w); m.add(plaque); py = TILE*0.75;
+                }
+
+                // Create physical pillars for bridges and walls in the chasm maps so they reach the bottom of the pit
+                if (isPitMap && (t === 0 || t === 3 || t === 8 || t === 9 || t === 11)) {
+                     let pPillar = new THREE.Mesh(new THREE.BoxGeometry(TILE, 16, TILE), Mat.floorGen);
+                     pPillar.position.set(px, -8, pz);
+                     pPillar.receiveShadow = true;
+                     group.add(pPillar);
+                }
+                if (isPitMap && (t === 1 || t === 2 || t === 13 || t === 14 || t === 15 || t === 17)) {
+                     let pPillar = new THREE.Mesh(new THREE.BoxGeometry(TILE, 16, TILE), Mat.wallGen);
+                     pPillar.position.set(px, -8, pz);
+                     group.add(pPillar);
                 }
             } else {
                 if (t === 1) { m = new THREE.Mesh(Geo.tallBox, Mat.wall); py = TILE*0.75; }
